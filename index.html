@@ -87,18 +87,20 @@
         const merging_point_color = 'rgba(255, 0, 0, 0.5)';
         const PathType = { "Line": 0, "Elbow": 1, "Curve": 2 };
 
-        loadShape('./lib/rect.png', 300, 200, nIcons++);
+        loadShape('./lib/rect.png', 300, 200, nIcons++); // 0
 
         loadShape('./lib/rect.png', 200, 400, nIcons++);
         loadShape('./lib/rect.png', 400, 400, nIcons++);
         loadShape('./lib/rect.png', 600, 400, nIcons++);
 
         loadShape('./lib/rect1.png', 600, 50, nIcons++);
-        loadShape('./lib/rect.png', 600, 150, nIcons++);
+        loadShape('./lib/rect.png', 900, 500, nIcons++);
 
+        loadShape('./lib/rect.png', 7000, 500, nIcons++);
+        loadShape('./lib/rect.png', 7000, 600, nIcons++);
 
-        loadShape('./lib/rect.png', 700, 500, nIcons++);
-        loadShape('./lib/rect.png', 700, 600, nIcons++);
+        loadShape('./lib/rect.png', 100, 550, nIcons++); // 8
+        loadShape('./lib/rect.png', 300, 550, nIcons++); // 9
 
         // update lines connected to this shape
         function updateConnectors(obj) {
@@ -108,7 +110,7 @@
             const objA = con.objA;
             const objB = con.objB;
             if (objA === obj || objB === obj) {
-              const points = getPathPoints(objA, con.anchorA, objB, con.anchorB);
+              const points = getPathPoints(objA, con.anchorA, objB, con.anchorB, con.pathType);
               const svgStr = getPathString(con.pathType, points);
               const newPath = new fabric.Path(svgStr);
               con.path = newPath.path;
@@ -147,7 +149,7 @@
           const [cx, cy] = [obj.left, obj.top];
           const u = uv[0], v = uv[1];
           if (!uv) {
-            return [[cx, cy], [0.5, 0]];
+            return [[cx, cy], [0.5, 0]]; // default tangent
           }
 
           const sx = obj.scaleX ? obj.scaleX : 1;
@@ -207,17 +209,16 @@
 
           const start = [objA.left, objA.top];
           const end = [objB.left, objB.top];
+          const [posA, tA] = getAnchorInfo(objA, anchorA);
+          const [posB, tB] = getAnchorInfo(objB, anchorB);
 
           // compute anchor positions based on [u,v]
           if (pathType === PathType.Line) {
-            return [start, end];
+            return [posA, posB];
           } else if (pathType === PathType.Elbow) {
-            return [start, [(objA.left + objB.left) / 2, objA.top], [(objA.left + objB.left) / 2, objB.top], end];
+            return [posA, [posA[0], (posA[1] + posB[1]) / 2], [posB[0], (posA[1] + posB[1]) / 2], posB];
           } else { // curve
             // here tangent is always available and normalized(because we only rotate unit vectors), it is required by curves
-            const [posA, tA] = getAnchorInfo(objA, anchorA);
-            const [posB, tB] = getAnchorInfo(objB, anchorB);
-
             const spanA = Math.abs((posA[0] - posB[0]) * tA[0] + (posA[1] - posB[1]) * tA[1]) / 2;
             const spanB = Math.abs((posA[0] - posB[0]) * tB[0] + (posA[1] - posB[1]) * tB[1]) / 2;
 
@@ -226,7 +227,6 @@
 
             return [posA, TPA, TPB, posB];
           }
-
         }
 
         function connect(objA, anchorA, objB, anchorB, pathType = PathType.Elbow) {
@@ -427,6 +427,7 @@
         function anchor() {
           // const obj = canvas.getActiveObject();
           //const connectors = canvas.getObjects().filter(obj => obj.type === 'image');
+
           connect(getIcon(0), [0.4, 1], getIcon(1), [0.5, 0], PathType.Curve);
           connect(getIcon(0), [0.5, 1], getIcon(2), [0.5, 0], PathType.Curve);
           connect(getIcon(0), [0.6, 1], getIcon(3), [0.5, 0], PathType.Curve);
@@ -434,7 +435,12 @@
           connect(getIcon(0), [1, 0.5], getIcon(4), [0, 0.5], PathType.Curve);
           connect(getIcon(0), [1, 0.5], getIcon(5), [0.25, 0.25], PathType.Curve);
 
+          // elbow
           connect(getIcon(6), [1, 0.5], getIcon(7), [0.5, 0], PathType.Elbow);
+
+          // line and elbow
+          connect(getIcon(1), [0.5, 1], getIcon(8), [0.5, 0], PathType.Line);
+          connect(getIcon(1), [0.5, 1], getIcon(9), [0.5, 0], PathType.Elbow);
 
           canvas.renderAll();
         }
