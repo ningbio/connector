@@ -45,6 +45,18 @@
         fabric.Object.prototype.objectCaching = true;
         canvas.selection = false; // no group selection
 
+        canvas.on('object:modified', function (e) {
+          console.log(e);
+          console.log("Object modified");
+          updateDefautAnchors(e.target);
+
+          // update connector for options.target
+          updateConnectors(e.target);
+
+          solveAndUpdate();
+          canvas.renderAll();
+        });
+
         // positions, fixed, edge array
         let nPoints = 0;
         let nEdges = 0;
@@ -52,10 +64,13 @@
         let fixed = [];
         let anchored = [];
         let edges = [];
+        let connectors = [];
 
+        // visual elements
         let renderDots = [];
         let renderEdges = [];
         let renderImages = [];
+        let renderConnectors = [];
 
         let toMergeIndex = -1;
         let showHelper = true;
@@ -67,6 +82,66 @@
         const maxImageDimension = 300; // pix
         const default_point_color = 'rgba(255, 200, 0, 0.5)';
         const merging_point_color = 'rgba(255, 0, 0, 0.5)';
+        const PathType = { "Line": 0, "Elbow": 1, "Curve": 2 };
+
+
+        loadShape('./lib/1.png', 200, 200);
+        loadShape('./lib/1.png', 500, 400);
+
+
+
+
+
+        // all lines are in lines array
+        function drawConnectors() {
+          renderConnectors.forEach(line => {
+            if (line.type === PathType.Curve) {
+              drawCurve(line.points);
+            } else {
+              drawPolyline(line.points);
+            }
+          });
+        }
+
+        function drawPolyline(points) {
+          if (points.length < 2) {
+            console.error('size of points < 2!');
+          }
+
+
+
+        }
+
+        function drawCurve(points) {
+          if (points.length !== 4) {
+            console.error('non-cubic bezier curve!');
+          }
+
+        }
+
+
+        // update lines connected to this shape
+        function updateConnectors(object) {
+
+        }
+
+        function connect(objA, anchorA, objB, anchorB) {
+          // bookkeeping in connector
+          const connector = {
+            objA,
+            anchorA,
+            objB,
+            anchorB,
+            offset: 0,
+            styles: [],
+          };
+
+          // bookkeeping in objects being connected
+          objA.connectors.push(connector);
+          objB.connectors.push(connector);
+
+          // create the shape 
+        }
 
         function addPoint(x, y) {
           pos.push(new fabric.Point(x, y));
@@ -82,7 +157,7 @@
             stroke: '#666',
             strokeWidth: 3,
             objectCaching: false,
-            selectable: true,
+            selectable: false,
             hasControls: false,
             visible: true,
             renderOnAddRemove: false,
@@ -93,129 +168,28 @@
           return dot.index;
         }
 
-        function addEdge(i, j) {
-          // make sure i < j
-          if (i == j) console.error(`no self loop`);
-          if (i > j) {
-            const t = i;
-            i = j;
-            j = t;
-          }
-
-          if (i >= nPoints || j >= nPoints) console.error(`out of range`);
-          const dist = pos[i].distanceFrom(pos[j]);
-          edges.push({
-            from: i,
-            to: j,
-            dist: dist,
-          });
-          const e = new fabric.Line([pos[i].x, pos[i].y, pos[j].x, pos[j].y], {
-            type: 'line',
-            index: nEdges++,
-            stroke: 'rgba(255,0,0,0.3)',
-            strokeWidth: 1,
-            objectCaching: false,
-            selectable: false,
-            hasControls: false,
-          });
-          renderEdges.push(e);
-          canvas.add(e);
-          canvas.sendToBack(e);
-        }
-
-        function mergePoints(i, j) {
-          if (i === j) return;
-          if (i > j) {
-            const t = i;
-            i = j;
-            j = t;
-          }
-          // we don't clean pos array, otherwise have to shift array
-          // remove j's renderDot on canvas, renderDots array is not cleaned
-          canvas.remove(renderDots[j]);
-
-          // update edge list
-          let edgeUpdated = false;
-          for (let k = 0; k < edges.length; k++) {
-            const e = edges[k];
-            if (e.from === j) {
-              e.from = i;
-              // e.dist = pos[i].distanceFrom(pos[e.to]); // merge should not change rest length
-              edgeUpdated = true;
-            }
-            if (e.to === j) {
-              e.to = i;
-              // e.dist = pos[i].distanceFrom(pos[e.from]);
-              edgeUpdated = true;
-            }
-          }
-          // update renderable lines
-          if (edgeUpdated) {
-            for (const line of renderEdges) {
-              const e = edges[line.index];
-              line.set({ x1: pos[e.from].x, y1: pos[e.from].y, x2: pos[e.to].x, y2: pos[e.to].y });
-            }
-          }
-
-          // update renderable images
-          if (edgeUpdated) {
-            for (const img of renderImages) {
-              for (let k = 0; k < img.chainIndices.length; k++) {
-                if (img.chainIndices[k] === j) {
-                  img.chainIndices[k] = i;
-                }
-              }
-            }
-          }
-          canvas.renderAll();
-        }
-
-        // test add point
-        // addPoint(100, 20);
-        // addPoint(200, 20);
-        // addPoint(300, 20);
-        // addPoint(400, 20);
-
-        // addEdge(0, 1);
-        // addEdge(1, 2);
-        // addEdge(2, 3);
-
-        // addPoint(50, 20);
-        // addPoint(50, 50);
-        // addPoint(50, 90);
-        // addEdge(4, 5);
-        // addEdge(6, 5);
-
-        // const i0 = addPoint(100, 80);
-        // const i1 = addPoint(200, 80);
-        // const i2 = addPoint(300, 80);
-        // const i3 = addPoint(400, 80);
-
-        // addEdge(i0, i1);
-        // addEdge(i1, i2);
-        // addEdge(i2, i3);
-
+        let isDraggingAnchor = false;
         canvas.on({
           'mouse:down': function (e) {
             if (!e.target) return;
             const obj = e.target;
             if (obj.type && obj.type === 'dot') {
-              obj.opacity = 0.5;
-              fixed[obj.index] = true;
+              // obj.opacity = 0.5;
+              // fixed[obj.index] = true;
               console.log(`point ${obj.index} selected!`);
               canvas.renderAll();
             } else if (obj.type && obj.type === 'image') {
-              for (const idx of obj.chainIndices) {
-                fixed[idx] = true;
-              }
+              // for (const idx of obj.chainIndices) {
+              //   fixed[idx] = true;
+              // }
             }
           },
           'mouse:up': function (e) {
             if (!e.target) return;
             const obj = e.target;
             if (obj.type && obj.type === 'dot') {
-              obj.opacity = 1;
-              fixed[obj.index] = false;
+              // obj.opacity = 1;
+              // fixed[obj.index] = false;
               console.log(`point ${obj.index} de-selected!`);
 
               if (toMergeIndex >= 0) {
@@ -238,7 +212,7 @@
               canvas.renderAll();
             } else if (obj.type && obj.type === 'image') {
               for (const idx of obj.chainIndices) {
-                fixed[idx] = false;
+                // fixed[idx] = false;
               }
             }
           },
@@ -246,6 +220,8 @@
             if (!e.target) return;
             const obj = e.target;
             if (obj.type && obj.type === 'dot') {
+
+              console.log(`moving dot!`);
               // fixed[obj.index] = true;
               // obj.opacity = 0.5;
 
@@ -271,15 +247,18 @@
               // solveAndUpdate();
               // canvas.renderAll();
             } else if (obj.type && obj.type === 'image') {
-              const attachIndices = obj.chainIndices;
-              const c0 = [(pos[attachIndices[0]].x + pos[attachIndices[2]].x) / 2, (pos[attachIndices[0]].y + pos[attachIndices[2]].y) / 2];
-              const c1 = [obj.left, obj.top];
-              const off = [c1[0] - c0[0], c1[1] - c0[1]];
-              for (const idx of attachIndices) {
-                pos[idx].x += off[0];
-                pos[idx].y += off[1];
-              }
-              solveAndUpdate();
+
+              updateConnectors(obj);
+
+              // const attachIndices = obj.chainIndices;
+              // const c0 = [(pos[attachIndices[0]].x + pos[attachIndices[2]].x) / 2, (pos[attachIndices[0]].y + pos[attachIndices[2]].y) / 2];
+              // const c1 = [obj.left, obj.top];
+              // const off = [c1[0] - c0[0], c1[1] - c0[1]];
+              // for (const idx of attachIndices) {
+              //   pos[idx].x += off[0];
+              //   pos[idx].y += off[1];
+              // }
+              // solveAndUpdate();
               canvas.renderAll();
 
             }
@@ -288,55 +267,9 @@
           },
         });
 
-        function solve() {
-          for (let i = 0; i < maxIterations; i++) {
-            let totalChange = 0;
-            for (const e of edges) {
-              const change = solveEdge(e.from, e.to, e.dist);
-              totalChange += change;
-            }
-
-            // converged
-            if (totalChange < changeThreshold) return true;
-          }
-          console.log(`maxIteration ${maxIterations} has reached!`);
-          return false;
-        }
-
-        function solveEdge(i, j, dist) {
-          if (i >= nPoints || j >= nPoints) console.error(`out of range`);
-          if (fixed[i] && fixed[j]) return 0;
-
-          const p1 = pos[i], p2 = pos[j];
-          // optmize: no need to sqrt!
-          const d = p1.distanceFrom(p2);
-          if (Math.abs(d - dist) < equalEps) return 0;
-
-          const dx = (p1.x - p2.x) / d;
-          const dy = (p1.y - p2.y) / d;
-
-          if (!fixed[i] && !anchored[i]) {
-            const s = fixed[j] ? 1.0 : 0.5;
-            const cx = -s * (d - dist) * dx;
-            const cy = -s * (d - dist) * dy;
-            pos[i].x += cx;
-            pos[i].y += cy;
-          }
-
-          if (!fixed[j] && !anchored[j]) {
-            const s = fixed[i] ? 1.0 : 0.5;
-            const cx = s * (d - dist) * dx;
-            const cy = s * (d - dist) * dy;
-            pos[j].x += cx;
-            pos[j].y += cy;
-          }
-
-          return Math.abs(d - dist);
-        }
-
         function solveAndUpdate() {
           // calc position dots position change
-          solve();
+          // solve();
 
           // update renderables (dots and lines)
           for (const dot of renderDots) {
@@ -346,30 +279,18 @@
             dot.setCoords();
           }
 
-          for (const line of renderEdges) {
-            const idx = line.index;
-            const p1 = pos[edges[idx].from];
-            const p2 = pos[edges[idx].to];
-            line.set({ x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y });
-          }
+          // for (const line of renderEdges) {
+          //   const idx = line.index;
+          //   const p1 = pos[edges[idx].from];
+          //   const p2 = pos[edges[idx].to];
+          //   line.set({ x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y });
+          // }
 
           // update image assets
-          for (const img of renderImages) {
-            updateImagePosition(img);
-            img.setCoords();
-          }
-        }
-
-        function bake() {
-          // update all constraint to be current value
-          for (const edge of edges) {
-            const p1 = pos[edge.from];
-            const p2 = pos[edge.to];
-            edge.dist = p1.distanceFrom(p2);
-          }
-
-          // update display
-          solveAndUpdate();
+          // for (const img of renderImages) {
+          //   updateImagePosition(img);
+          //   img.setCoords();
+          // }
         }
 
         function toogleHelper() {
@@ -389,20 +310,20 @@
         function anchor() {
           console.log(`here!`);
           const obj = canvas.getActiveObject();
-          if (obj && obj.type && obj.type === 'dot') {
-            anchored[obj.index] = !anchored[obj.index];
-            if (anchored[obj.index]) {
-              obj.fill = 'rgba(0,0,255,1)'
-            } else {
-              obj.fill = default_point_color;
-            }
-          }
+          // if (obj && obj.type && obj.type === 'dot') {
+          //   anchored[obj.index] = !anchored[obj.index];
+          //   if (anchored[obj.index]) {
+          //     obj.fill = 'rgba(0,0,255,1)'
+          //   } else {
+          //     obj.fill = default_point_color;
+          //   }
+          // }
           canvas.renderAll();
         }
         document.getElementById('anchor').onclick = anchor;
 
-        // we may use different sets of points to 'span' the object
-        function attachPoints(obj) {
+        // default anchor points
+        function attachDefaultAnchors(obj) {
           const s = obj.scaleX ? obj.scaleX : 1;
           const halfW = obj.width / 2 * s;
           const halfH = obj.height / 2 * s;
@@ -414,15 +335,35 @@
           const bottom = addPoint(cx, cy + halfH);
           const left = addPoint(cx - halfW, cy);
 
-          addEdge(top, right);
-          addEdge(top, bottom);
-          addEdge(top, left);
-          addEdge(right, bottom);
-          addEdge(bottom, left);
-          addEdge(left, right);
-
           // mapping from asset to attached points need to be saved
           obj.chainIndices = [top, right, bottom, left];
+        }
+
+        // update visual default anchors
+        function updateDefautAnchors(obj) {
+          const sx = obj.scaleX ? obj.scaleX : 1;
+          const sy = obj.scaleY ? obj.scaleY : 1;
+          const halfW = obj.width / 2 * sx;
+          const halfH = obj.height / 2 * sy;
+          const cx = obj.left;
+          const cy = obj.top;
+          const angle = obj.angle; // 0~360
+          const cosV = Math.cos(angle / 180 * Math.PI);
+          const sinV = Math.sin(angle / 180 * Math.PI);
+
+          const vecs = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+          let newV = [];
+          for (let i = 0; i < 4; i++) {
+            const nx = cosV * vecs[i][0] - sinV * vecs[i][1];
+            const ny = sinV * vecs[i][0] + cosV * vecs[i][1];
+            newV.push({ x: nx, y: ny });
+            const len = (i === 0 || i === 2) ? halfH : halfW;
+            pos[obj.chainIndices[i]] = {
+              x: cx + len * nx,
+              y: cy + len * ny
+            };
+          }
+          console.log(newV);
         }
 
         function updateImagePosition(img) {
@@ -447,23 +388,23 @@
           img.angle = angle * 180 / Math.PI;
         }
 
-        function loadShape(file) {
+        function loadShape(file, x = 300, y = 300) {
           if (!file || file === '') return;
           fabric.Image.fromURL(file, function (img) {
             console.log(`load one shape ${img.width}X${img.height} onto canvas!`);
             lastFile = file;
-            img.set({ left: canvas.getWidth() / 2, top: canvas.getHeight() / 2 });
+            img.set({ left: canvas.getWidth() / 2 | x, top: canvas.getHeight() / 2 | y });
             const dim = Math.max(img.width, img.height);
             const scale = dim < maxImageDimension ? 1.0 : maxImageDimension / dim;
             img.scale(scale);
             img.set('type', 'image');
-            img.set('hasControls', false);
+            img.set('hasControls', true);
             img.set('objectCaching', false);
             img.set('selectable', true);
             canvas.add(img);
             // canvas.sendToBack(img);
             canvas.bringToFront();
-            attachPoints(img);
+            attachDefaultAnchors(img);
             renderImages.push(img);
           });
         }
