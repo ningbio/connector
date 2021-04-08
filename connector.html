@@ -61,7 +61,7 @@
         let fixed = [];
         let anchored = [];
         let edges = [];
-        let connectors = [];
+        // let connectors = [];
 
         // visual elements
         let renderDots = [];
@@ -88,8 +88,8 @@
           for (let i = 0; i < renderConnectors.length; i++) {
             const con = renderConnectors[i];
             const index = con.index;
-            const objA = connectors[index].objA;
-            const objB = connectors[index].objB;
+            const objA = con.objA;
+            const objB = con.objB;
             if (objA === obj || objB === obj) {
               const points = getPathPoints(objA, undefined, objB, undefined);
               const svgStr = getPathString(con.pathType, points);
@@ -125,10 +125,25 @@
           }
         }
 
-        function getPathPoints(objA, anchorA, objB, anchorB) {
+        function getPathPoints(objA, anchorA, objB, anchorB, pathType) {
+          // test only
           const start = [objA.left, objA.top];
           const end = [objB.left, objB.top];
           return [start, [(objA.left + objB.left) / 2, objA.top], [(objA.left + objB.left) / 2, objB.top], end];
+
+          // compute anchor positions
+          // if (anchorA) {
+
+          // }
+
+          // if (pathType === PathType.Line) {
+
+          // } else if (pathType === PathType.Elbow) {
+
+          // } else { // curve
+
+          // }
+
         }
 
         function connect(objA, anchorA, objB, anchorB, pathType = PathType.Elbow) {
@@ -147,27 +162,19 @@
             stroke: 'black',
             objectCaching: false,
             selectable: false,
-          });
-          renderConnectors.push(renderLine);
-          canvas.add(renderLine);
-
-          // bookkeeping in connector
-          const connector = {
             objA,
             anchorA,
             objB,
             anchorB,
             offset: 0,
-            styles: [],
-            index: idx,
-          };
+          });
+          renderConnectors.push(renderLine);
+          canvas.add(renderLine);
+          renderLine.sendToBack();
 
           // bookkeeping in objects being connected
-          objA.connectors.push(connector);
-          objB.connectors.push(connector);
-
-          // global connectors
-          connectors.push(connector);
+          objA.connectors.push(renderLine);
+          objB.connectors.push(renderLine);
         }
 
         function addPoint(x, y, dragable = false) {
@@ -274,7 +281,7 @@
               // solveAndUpdate();
               // canvas.renderAll();
             } else if (obj.type && obj.type === 'image') {
-
+              updateDefautAnchors(obj);
               updateConnectors(obj);
 
               // const attachIndices = obj.chainIndices;
@@ -285,7 +292,7 @@
               //   pos[idx].x += off[0];
               //   pos[idx].y += off[1];
               // }
-              // solveAndUpdate();
+              solveAndUpdate();
               canvas.renderAll();
 
             }
