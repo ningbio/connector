@@ -15,7 +15,7 @@
     <p>
       <button id="anchor">load connections</button>
       <button id="showHelper">toggle ui</button>
-      <button id="shrink">shrink</button>
+      <!-- <button id="shrink">shrink</button>
       <button id="expand">expand</button>
       <button id="load-circle">circle</button>
       <button id="load-bar1">bar1</button>
@@ -26,8 +26,8 @@
       <button id="load-nuron-head">neuron-head</button>
       <button id="load-nuron-stem">neuron-stem</button>
       <button id="load-nuron-tail">neuron-tail</button>
-      <button id="load-chemistry">chemistry</button>
-      <button id="load-cell">cell</button>
+      <button id="load-chemistry">chemistry</button> -->
+      <!-- <button id="load-cell">cell</button> -->
       <button id="load-last">load last</button>
       <input type="file" id="load-custom"></input>
     </p>
@@ -529,34 +529,19 @@
           }
         }
 
-        document.getElementById('load-circle').onclick = (function () { loadShape('./lib/circle.png'); });
-        document.getElementById('load-bar1').onclick = (function () { loadShape('./lib/5.png'); });
-        document.getElementById('load-bar2').onclick = (function () { loadShape('./lib/0.png'); });
-        document.getElementById('load-bar3').onclick = (function () { loadShape('./lib/2.png'); });
-        document.getElementById('load-nuron1').onclick = (function () { loadShape('./lib/1.png'); });
-        document.getElementById('load-nuron2').onclick = (function () { loadShape('./lib/3.png'); });
-        document.getElementById('load-nuron-head').onclick = (function () { loadShape('./lib/nuron-head.png'); });
-        document.getElementById('load-nuron-stem').onclick = (function () { loadShape('./lib/nuron-stem.png'); });
-        document.getElementById('load-nuron-tail').onclick = (function () { loadShape('./lib/nuron-tail.png'); });
-        document.getElementById('load-chemistry').onclick = (function () { loadShape('./lib/4.png'); });
-        document.getElementById('load-cell').onclick = (function () { loadShape('./lib/6.png'); });
+        // document.getElementById('load-circle').onclick = (function () { loadShape('./lib/circle.png'); });
+        // document.getElementById('load-bar1').onclick = (function () { loadShape('./lib/5.png'); });
+        // document.getElementById('load-bar2').onclick = (function () { loadShape('./lib/0.png'); });
+        // document.getElementById('load-bar3').onclick = (function () { loadShape('./lib/2.png'); });
+        // document.getElementById('load-nuron1').onclick = (function () { loadShape('./lib/1.png'); });
+        // document.getElementById('load-nuron2').onclick = (function () { loadShape('./lib/3.png'); });
+        // document.getElementById('load-nuron-head').onclick = (function () { loadShape('./lib/nuron-head.png'); });
+        // document.getElementById('load-nuron-stem').onclick = (function () { loadShape('./lib/nuron-stem.png'); });
+        // document.getElementById('load-nuron-tail').onclick = (function () { loadShape('./lib/nuron-tail.png'); });
+        // document.getElementById('load-chemistry').onclick = (function () { loadShape('./lib/4.png'); });
+        // document.getElementById('load-cell').onclick = (function () { loadShape('./lib/6.png'); });
         document.getElementById('load-last').onclick = (function () { loadShape(lastFile); });
         document.getElementById('load-custom').addEventListener('change', customLoad, false);
-        document.getElementById('shrink').onclick = (function () {
-          for (const edge of edges) {
-            edge.dist *= (1 - 0.01);
-          }
-          solveAndUpdate();
-          canvas.renderAll();
-        });
-        document.getElementById('expand').onclick = (function () {
-          for (const edge of edges) {
-            edge.dist *= (1 + 0.01);
-          }
-          solveAndUpdate();
-          canvas.renderAll();
-        });
-
       })();
     </script>
 
