@@ -44,9 +44,11 @@
         canvas.on('object:modified', function (e) {
           console.log("Object modified");
           if (e.target.type === 'image') {
+
+            // show the default attaching points
             updateDefautAnchors(e.target);
 
-            // update connector for options.target
+            // update lines            
             updateConnectors(e.target);
 
             solveAndUpdate();
@@ -79,9 +81,8 @@
         const merging_point_color = 'rgba(255, 0, 0, 0.5)';
         const PathType = { "Line": 0, "Elbow": 1, "Curve": 2 };
 
-
-        const figA = loadShape('./lib/1.png', 200, 200);
-        const figB = loadShape('./lib/1.png', 500, 400);
+        const figA = loadShape('./lib/rect.png', 200, 200);
+        const figB = loadShape('./lib/rect.png', 500, 400);
 
         // update lines connected to this shape
         function updateConnectors(obj) {
@@ -91,7 +92,7 @@
             const objA = con.objA;
             const objB = con.objB;
             if (objA === obj || objB === obj) {
-              const points = getPathPoints(objA, undefined, objB, undefined);
+              const points = getPathPoints(objA, con.anchorA, objB, con.anchorB);
               const svgStr = getPathString(con.pathType, points);
               const newPath = new fabric.Path(svgStr);
               con.path = newPath.path;
@@ -125,17 +126,86 @@
           }
         }
 
+        // get the anchor position and tangent based on [u,v]
+        function getAnchorInfo(obj, uv) {
+          const [cx, cy] = [obj.left, obj.top];
+          const u = uv[0], v = uv[1];
+          if (!uv) {
+            return [[cx, cy], [0.5, 0]];
+          }
+
+          const sx = obj.scaleX ? obj.scaleX : 1;
+          const sy = obj.scaleY ? obj.scaleY : 1;
+          const W = obj.width * sx;
+          const H = obj.height * sy;
+          const halfW = W / 2;
+          const halfH = H / 2;
+          const angle = obj.angle; // 0~360
+          const cosV = Math.cos(angle / 180 * Math.PI);
+          const sinV = Math.sin(angle / 180 * Math.PI);
+          const vecs = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // top, right, bottom, left
+
+          if (v === 0) {
+            // attach top edge
+            const vec = vecs[0];
+            const nx = cosV * vec[0] - sinV * vec[1];
+            const ny = sinV * vec[0] + cosV * vec[1];
+            const len = halfH;
+            const pos = [cx + len * nx + (u - 0.5) * W * (-ny), cy + len * ny + (u - 0.5) * W * nx];
+            return [pos, [nx, ny]];
+          } else if (v === 1) {
+            // attach bottom edge
+            const vec = vecs[2];
+            const nx = cosV * vec[0] - sinV * vec[1];
+            const ny = sinV * vec[0] + cosV * vec[1];
+            const len = halfH;
+            const pos = [cx + len * nx + (u - 0.5) * W * (-ny), cy + len * ny + (u - 0.5) * W * nx];
+            return [pos, [nx, ny]];
+          } else if (u === 0) {
+            // attach left edge
+            const vec = vecs[1];
+            const nx = cosV * vec[0] - sinV * vec[1];
+            const ny = sinV * vec[0] + cosV * vec[1];
+            const len = halfW;
+            const pos = [cx + len * nx + (v - 0.5) * H * (-ny), cy + len * ny + (v - 0.5) * H * nx];
+            return [pos, [nx, ny]];
+          } else if (u === 1) {
+            // attach right edge
+            const vec = vecs[3];
+            const nx = cosV * vec[0] - sinV * vec[1];
+            const ny = sinV * vec[0] + cosV * vec[1];
+            const len = halfW;
+            const pos = [cx + len * nx + (v - 0.5) * H * (-ny), cy + len * ny + (v - 0.5) * H * nx];
+            return [pos, [nx, ny]];
+          } else {
+            // attach inner anchor
+            const vec = [u - 0.5, v - 0.5];
+            const nx = cosV * vec[0] - sinV * vec[1];
+            const ny = sinV * vec[0] + cosV * vec[1];
+            const pos = [cx + halfW * nx + (u - 0.5) * W * (-ny), cy + halfH * ny + (v - 0.5) * H * nx];
+            return [pos, [nx, ny]];
+          }
+        }
+
         function getPathPoints(objA, anchorA, objB, anchorB, pathType) {
-          // test only
-          const start = [objA.left, objA.top];
-          const end = [objB.left, objB.top];
-          return [start, [(objA.left + objB.left) / 2, objA.top], [(objA.left + objB.left) / 2, objB.top], end];
+          // here tangent is always available and normalized(because we only rotate unit vectors)
+          const [posA, tA] = getAnchorInfo(objA, anchorA);
+          const [posB, tB] = getAnchorInfo(objB, anchorB);
 
-          // compute anchor positions
-          // if (anchorA) {
+          const spanA = Math.abs((posA[0] - posB[0]) * tA[0] + (posA[1] - posB[1]) * tA[1]) / 2;
+          const spanB = Math.abs((posA[0] - posB[0]) * tB[0] + (posA[1] - posB[1]) * tB[1]) / 2;
 
-          // }
+          const TPA = [posA[0] + tA[0] * spanA, posA[1] + tA[1] * spanA];
+          const TPB = [posB[0] + tB[0] * spanB, posB[1] + tB[1] * spanB];
 
+          return [posA, TPA, TPB, posB];
+
+          // const start = [objA.left, objA.top];
+          // const end = [objB.left, objB.top];
+          // return [start, [(objA.left + objB.left) / 2, objA.top], [(objA.left + objB.left) / 2, objB.top], end];
+
+
+          // compute anchor positions based on [u,v]
           // if (pathType === PathType.Line) {
 
           // } else if (pathType === PathType.Elbow) {
@@ -148,7 +218,7 @@
 
         function connect(objA, anchorA, objB, anchorB, pathType = PathType.Elbow) {
           // fetch path data from A, B layout
-          const points = getPathPoints(objA, anchorA, objB, anchorB);
+          const points = getPathPoints(objA, anchorA, objB, anchorB, pathType);
           // const points = [[50, 50], [100, 50], [100, 100], [150, 100]];
           const svgStr = getPathString(pathType, points);
 
@@ -347,7 +417,7 @@
 
           const figA = connectors[0];
           const figB = connectors[1];
-          connect(figA, undefined, figB, undefined, PathType.Curve);
+          connect(figA, [0.5, 1], figB, [0.5, 0], PathType.Curve);
 
           canvas.renderAll();
         }
