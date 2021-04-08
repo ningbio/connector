@@ -13,7 +13,7 @@
     <p>
       Validate behaviors of connectors
     <p>
-      <button id="anchor">toggle anchor</button>
+      <button id="anchor">load connections</button>
       <button id="showHelper">toggle ui</button>
       <button id="shrink">shrink</button>
       <button id="expand">expand</button>
@@ -44,13 +44,18 @@
         canvas.on('object:modified', function (e) {
           console.log("Object modified");
           if (e.target.type === 'image') {
-
             // show the default attaching points
             updateDefautAnchors(e.target);
-
-            // update lines            
             updateConnectors(e.target);
+            solveAndUpdate();
+            canvas.renderAll();
+          }
+        });
 
+        canvas.on('object:rotating', function (e) {
+          if (e.target.type === 'image') {
+            updateDefautAnchors(e.target);
+            updateConnectors(e.target);
             solveAndUpdate();
             canvas.renderAll();
           }
@@ -188,31 +193,29 @@
         }
 
         function getPathPoints(objA, anchorA, objB, anchorB, pathType) {
-          // here tangent is always available and normalized(because we only rotate unit vectors)
-          const [posA, tA] = getAnchorInfo(objA, anchorA);
-          const [posB, tB] = getAnchorInfo(objB, anchorB);
 
-          const spanA = Math.abs((posA[0] - posB[0]) * tA[0] + (posA[1] - posB[1]) * tA[1]) / 2;
-          const spanB = Math.abs((posA[0] - posB[0]) * tB[0] + (posA[1] - posB[1]) * tB[1]) / 2;
-
-          const TPA = [posA[0] + tA[0] * spanA, posA[1] + tA[1] * spanA];
-          const TPB = [posB[0] + tB[0] * spanB, posB[1] + tB[1] * spanB];
-
-          return [posA, TPA, TPB, posB];
-
-          // const start = [objA.left, objA.top];
-          // const end = [objB.left, objB.top];
-          // return [start, [(objA.left + objB.left) / 2, objA.top], [(objA.left + objB.left) / 2, objB.top], end];
-
+          const start = [objA.left, objA.top];
+          const end = [objB.left, objB.top];
 
           // compute anchor positions based on [u,v]
-          // if (pathType === PathType.Line) {
+          if (pathType === PathType.Line) {
+            return [start, [(objA.left + objB.left) / 2, objA.top], [(objA.left + objB.left) / 2, objB.top], end];
+          } else if (pathType === PathType.Elbow) {
+            return [start, [(objA.left + objB.left) / 2, objA.top], [(objA.left + objB.left) / 2, objB.top], end];
+          } else { // curve
+            // here tangent is always available and normalized(because we only rotate unit vectors), it is required by curves
+            const [posA, tA] = getAnchorInfo(objA, anchorA);
+            const [posB, tB] = getAnchorInfo(objB, anchorB);
 
-          // } else if (pathType === PathType.Elbow) {
+            const spanA = Math.abs((posA[0] - posB[0]) * tA[0] + (posA[1] - posB[1]) * tA[1]) / 2;
+            const spanB = Math.abs((posA[0] - posB[0]) * tB[0] + (posA[1] - posB[1]) * tB[1]) / 2;
 
-          // } else { // curve
+            const TPA = [posA[0] + tA[0] * spanA, posA[1] + tA[1] * spanA];
+            const TPB = [posB[0] + tB[0] * spanB, posB[1] + tB[1] * spanB];
 
-          // }
+            return [posA, TPA, TPB, posB];
+
+          }
 
         }
 
@@ -417,7 +420,7 @@
 
           const figA = connectors[0];
           const figB = connectors[1];
-          connect(figA, [0.5, 1], figB, [0.5, 0], PathType.Curve);
+          connect(figA, [0.25, 1], figB, [0, 0.5], PathType.Curve);
 
           canvas.renderAll();
         }
