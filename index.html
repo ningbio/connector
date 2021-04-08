@@ -68,6 +68,7 @@
         let fixed = [];
         let anchored = [];
         let edges = [];
+        let nIcons = 0;
         // let connectors = [];
 
         // visual elements
@@ -86,11 +87,18 @@
         const merging_point_color = 'rgba(255, 0, 0, 0.5)';
         const PathType = { "Line": 0, "Elbow": 1, "Curve": 2 };
 
-        loadShape('./lib/rect.png', 200, 200);
-        loadShape('./lib/rect.png', 400, 200);
+        loadShape('./lib/rect.png', 300, 200, nIcons++);
 
-        loadShape('./lib/rect.png', 200 + 200, 400);
-        loadShape('./lib/rect.png', 400 + 200, 400);
+        loadShape('./lib/rect.png', 200, 400, nIcons++);
+        loadShape('./lib/rect.png', 400, 400, nIcons++);
+        loadShape('./lib/rect.png', 600, 400, nIcons++);
+
+        loadShape('./lib/rect1.png', 600, 50, nIcons++);
+        loadShape('./lib/rect.png', 600, 150, nIcons++);
+
+
+        loadShape('./lib/rect.png', 700, 500, nIcons++);
+        loadShape('./lib/rect.png', 700, 600, nIcons++);
 
         // update lines connected to this shape
         function updateConnectors(obj) {
@@ -167,19 +175,19 @@
             const nx = cosV * vec[0] - sinV * vec[1];
             const ny = sinV * vec[0] + cosV * vec[1];
             const len = halfH;
-            const pos = [cx + len * nx + (u - 0.5) * W * (-ny), cy + len * ny + (u - 0.5) * W * nx];
+            const pos = [cx + len * nx + (u - 0.5) * W * (ny), cy + len * ny + (u - 0.5) * W * (-nx)];
             return [pos, [nx, ny]];
           } else if (u === 0) {
             // attach left edge
-            const vec = vecs[1];
+            const vec = vecs[3];
             const nx = cosV * vec[0] - sinV * vec[1];
             const ny = sinV * vec[0] + cosV * vec[1];
             const len = halfW;
-            const pos = [cx + len * nx + (v - 0.5) * H * (-ny), cy + len * ny + (v - 0.5) * H * nx];
+            const pos = [cx + len * nx + (v - 0.5) * H * (ny), cy + len * ny + (v - 0.5) * H * (-nx)];
             return [pos, [nx, ny]];
           } else if (u === 1) {
             // attach right edge
-            const vec = vecs[3];
+            const vec = vecs[1];
             const nx = cosV * vec[0] - sinV * vec[1];
             const ny = sinV * vec[0] + cosV * vec[1];
             const len = halfW;
@@ -418,15 +426,15 @@
 
         function anchor() {
           // const obj = canvas.getActiveObject();
-          const connectors = canvas.getObjects().filter(obj => obj.type === 'image');
+          //const connectors = canvas.getObjects().filter(obj => obj.type === 'image');
+          connect(getIcon(0), [0.4, 1], getIcon(1), [0.5, 0], PathType.Curve);
+          connect(getIcon(0), [0.5, 1], getIcon(2), [0.5, 0], PathType.Curve);
+          connect(getIcon(0), [0.6, 1], getIcon(3), [0.5, 0], PathType.Curve);
 
-          const figA = connectors[0];
-          const figB = connectors[1];
-          connect(figA, [0.25, 1], figB, [0, 0.5], PathType.Curve);
+          connect(getIcon(0), [1, 0.5], getIcon(4), [0, 0.5], PathType.Curve);
+          connect(getIcon(0), [1, 0.5], getIcon(5), [0.25, 0.25], PathType.Curve);
 
-          const figC = connectors[2];
-          const figD = connectors[3];
-          connect(figC, [0.5, 1], figD, [0, 0.5], PathType.Elbow);
+          connect(getIcon(6), [1, 0.5], getIcon(7), [0.5, 0], PathType.Elbow);
 
           canvas.renderAll();
         }
@@ -497,7 +505,7 @@
           img.angle = angle * 180 / Math.PI;
         }
 
-        function loadShape(file, x = 300, y = 300) {
+        function loadShape(file, x = 300, y = 300, iconId) {
           if (!file || file === '') return;
           fabric.Image.fromURL(file, function (img) {
             console.log(`load one shape ${img.width}X${img.height} onto canvas!`);
@@ -510,6 +518,7 @@
             img.set('hasControls', true);
             img.set('objectCaching', false);
             img.set('selectable', true);
+            img.iconId = iconId;
             img.connectors = [];
             canvas.add(img);
             // canvas.sendToBack(img);
@@ -519,11 +528,15 @@
           });
         }
 
+        function getIcon(iconId) {
+          return canvas.getObjects().filter(obj => obj.type === 'image' && obj.iconId === iconId)[0];
+        }
+
         function customLoad(e) {
           var fileType = e.target.files[0].type;
           var url = URL.createObjectURL(e.target.files[0]);
           if (fileType === 'image/png' || fileType === 'image/jpeg' || fileType === 'image/jpg') {
-            loadShape(url);
+            loadShape(url, nIcons++);
           } else if (fileType === 'image/svg+xml') {
             // fabric.loadSVGFromURL(url, function(objects, options) {});
           }
@@ -540,7 +553,7 @@
         // document.getElementById('load-nuron-tail').onclick = (function () { loadShape('./lib/nuron-tail.png'); });
         // document.getElementById('load-chemistry').onclick = (function () { loadShape('./lib/4.png'); });
         // document.getElementById('load-cell').onclick = (function () { loadShape('./lib/6.png'); });
-        document.getElementById('load-last').onclick = (function () { loadShape(lastFile); });
+        document.getElementById('load-last').onclick = (function () { loadShape(lastFile, nIcons++); });
         document.getElementById('load-custom').addEventListener('change', customLoad, false);
       })();
     </script>
