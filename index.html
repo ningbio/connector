@@ -337,47 +337,15 @@
             if (!e.target) return;
             const obj = e.target;
             if (obj.type && obj.type === 'dot') {
-
               console.log(`moving dot!`);
-              // fixed[obj.index] = true;
-              // obj.opacity = 0.5;
-
-              // // update this dragged pos as fixed
-              // pos[obj.index].x = obj.left;
-              // pos[obj.index].y = obj.top;
-
-              // // may ready to merge?
-              // for (const otherDot of renderDots) {
-              //   if (anchored[otherDot.index]) continue;
-              //   if (obj !== otherDot && obj.intersectsWithObject(otherDot)) {
-              //     // ready to merge
-              //     otherDot.fill = merging_point_color;
-              //     toMergeIndex = otherDot.index;
-              //     break;
-              //   } else {
-              //     // normal fill
-              //     otherDot.fill = default_point_color;
-              //     toMergeIndex = -1;
-              //   }
-              // }
 
               // solveAndUpdate();
               // canvas.renderAll();
             } else if (obj.type && obj.type === 'image') {
               updateDefautAnchors(obj);
               updateConnectors(obj);
-
-              // const attachIndices = obj.chainIndices;
-              // const c0 = [(pos[attachIndices[0]].x + pos[attachIndices[2]].x) / 2, (pos[attachIndices[0]].y + pos[attachIndices[2]].y) / 2];
-              // const c1 = [obj.left, obj.top];
-              // const off = [c1[0] - c0[0], c1[1] - c0[1]];
-              // for (const idx of attachIndices) {
-              //   pos[idx].x += off[0];
-              //   pos[idx].y += off[1];
-              // }
               solveAndUpdate();
               canvas.renderAll();
-
             }
           },
           'object:moved': function (e) {
