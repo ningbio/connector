@@ -270,12 +270,26 @@
                 return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, mid], [posB[0] - pad, mid], [posB[0] - pad, posB[1]], posB];
               }
 
-
-
-
-
             } else if (tB[0] === 0 && tB[1] === -1) {
               // B: up
+              if (posA[1] > posB[1] && posA[0] < posB[0]) { // case 1
+                if (A.right < B.left) { // can pass
+                  const mid = (A.right + B.left) / 2;
+                  return [posA, [mid, posA[1]], [mid, posB[1] - pad], [mid, posB[1] - pad], [posB[0], posB[1] - pad], posB];
+                } else {
+                  return [posA, [B.right + pad, posA[1]], [B.right + pad, B.top - pad], [posB[0], posB[1] - pad], posB];
+                }
+              } else { // case 2
+                if (posB[0] > posA[0]) {
+                  return [posA, [posB[0], posA[1]], posB];
+                }
+                else if (A.bottom < B.top) {
+                  const mid = (A.bottom + B.top) / 2;
+                  return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, mid], [posB[0], mid], posB];
+                } else {
+                  return [posA, [Math.max(A.right, B.right) + pad, posA[1]], [Math.max(A.right, B.right) + pad, Math.min(A.top, B.top) - pad], [posB[0], Math.min(A.top, B.top) - pad], posB];
+                }
+              }
 
             } else if (tB[0] === 1 && tB[1] === 0) {
               // B: right
@@ -463,7 +477,7 @@
           connect(getIcon(0), [1, 0.5], getIcon(5), [0.25, 0.25], PathType.Curve);
 
           // elbow
-          connect(getIcon(6), [1, 0.5], getIcon(7), [0, 0.2], PathType.Elbow);
+          connect(getIcon(6), [1, 0.5], getIcon(7), [0.5, 0], PathType.Elbow);
 
           // line and elbow
           connect(getIcon(1), [0.5, 1], getIcon(8), [0.5, 0], PathType.Line);
