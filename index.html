@@ -96,11 +96,15 @@
         loadShape('./lib/rect1.png', 600, 50, nIcons++);
         loadShape('./lib/rect.png', 900, 500, nIcons++);
 
-        loadShape('./lib/rect.png', 600, 600, nIcons++); // 6
+        loadShape('./lib/rect1.png', 600, 600, nIcons++); // 6
         loadShape('./lib/rect.png', 600, 700, nIcons++); // 7
 
         loadShape('./lib/rect.png', 100, 550, nIcons++); // 8
-        loadShape('./lib/rect.png', 300, 550, nIcons++); // 9
+
+        loadShape('./lib/rect1.png', 300, 550, nIcons++); // 9
+        loadShape('./lib/rect.png', 400, 650, nIcons++); // 10
+        loadShape('./lib/rect.png', 400, 750, nIcons++); // 11
+        loadShape('./lib/rect1.png', 400, 550, nIcons++); // 12
 
         // update lines connected to this shape
         function updateConnectors(obj) {
@@ -248,7 +252,7 @@
           if (tA[0] === 1 && tA[1] === 0) {
             // fixed A: right
             if (tB[0] === -1 && tB[1] === 0) {
-              // B: left              
+              // tB: pointing left              
               if (A.right <= B.left) { // case 1: B is right of A
                 // console.log(`case 1`);
                 return [posA, [(posA[0] + posB[0]) / 2, posA[1]], [(posA[0] + posB[0]) / 2, posB[1]], posB];
@@ -271,9 +275,9 @@
               }
 
             } else if (tB[0] === 0 && tB[1] === -1) {
-              // B: up
+              // tB: pointing up
               if (posA[1] > posB[1] && posA[0] < posB[0]) { // case 1
-                if (A.right < B.left) { // can pass
+                if (A.right < B.left) { // can pass middle
                   const mid = (A.right + B.left) / 2;
                   return [posA, [mid, posA[1]], [mid, posB[1] - pad], [mid, posB[1] - pad], [posB[0], posB[1] - pad], posB];
                 } else {
@@ -292,9 +296,32 @@
               }
 
             } else if (tB[0] === 1 && tB[1] === 0) {
-              // B: right
+              // tB: pointing right
+              if (posA[1] < posB[1]) { // posA is up, posB is down
+                console.log(`here!`);
+                if (posB[1] - A.bottom > pad || B.top - posA[1] > pad || (B.right > A.left && posB[0] < posA[0])) {
+                  return [posA, [Math.max(posA[0], posB[0]) + pad, posA[1]], [Math.max(posA[0], posB[0]) + pad, posB[1]], posB];
+                } else if (posA[0] > posB[0]) { // A is right
+                  const mid = (A.left + B.right) / 2;
+                  return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, A.bottom + pad], [mid, A.bottom + pad], [mid, posB[1]], posB];
+                } else {
+                  const mid = (A.right + B.left) / 2;
+                  return [posA, [mid, posA[1]], [mid, B.top - pad], [B.right + pad, B.top - pad], [posB[0] + pad, posB[1]], posB];
+                }
+              } else { // posA is down
+                if (posA[1] - B.bottom > pad || A.top - posB[1] > pad || (B.right > A.left && posB[0] < posA[0])) {
+                  return [posA, [Math.max(posA[0], posB[0]) + pad, posA[1]], [Math.max(posA[0], posB[0]) + pad, posB[1]], posB];
+                } else if (posA[0] > posB[0]) { // A is right
+                  const mid = (A.left + B.right) / 2;
+                  return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, A.top - pad], [mid, A.top - pad], [mid, posB[1]], posB];
+                } else {
+                  const mid = (A.right + B.left) / 2;
+                  return [posA, [mid, posA[1]], [mid, B.bottom + pad], [B.right + pad, B.bottom + pad], [posB[0] + pad, posB[1]], posB];
+                }
+              }
             } else if (tB[0] === 0 && tB[1] === 1) {
-              // B: down
+              // tB: down
+
             } else {
               console.error(`tB incorrect value!`);
             }
@@ -477,11 +504,14 @@
           connect(getIcon(0), [1, 0.5], getIcon(5), [0.25, 0.25], PathType.Curve);
 
           // elbow
-          connect(getIcon(6), [1, 0.5], getIcon(7), [0.5, 0], PathType.Elbow);
+          connect(getIcon(6), [1, 0.5], getIcon(7), [1, 0.5], PathType.Elbow);
 
           // line and elbow
           connect(getIcon(1), [0.5, 1], getIcon(8), [0.5, 0], PathType.Line);
-          connect(getIcon(1), [0.5, 1], getIcon(9), [0.5, 0], PathType.Elbow);
+
+          connect(getIcon(9), [1, 0.5], getIcon(10), [0, 0.5], PathType.Elbow);
+          connect(getIcon(9), [1, 0.5], getIcon(11), [0, 0.5], PathType.Elbow);
+          connect(getIcon(9), [1, 0.5], getIcon(12), [0, 0.5], PathType.Elbow);
 
           canvas.renderAll();
         }
