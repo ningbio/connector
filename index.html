@@ -294,7 +294,6 @@
                   return [posA, [Math.max(A.right, B.right) + pad, posA[1]], [Math.max(A.right, B.right) + pad, Math.min(A.top, B.top) - pad], [posB[0], Math.min(A.top, B.top) - pad], posB];
                 }
               }
-
             } else if (tB[0] === 1 && tB[1] === 0) {
               // tB: pointing right
               if (posA[1] < posB[1]) { // posA is up, posB is down
@@ -321,7 +320,17 @@
               }
             } else if (tB[0] === 0 && tB[1] === 1) {
               // tB: down
-
+              if (posA[0] < posB[0] && posA[1] > posB[1]) {
+                return [posA, [posB[0], posA[1]], posB];
+              } else if (posB[0] < posA[0] && B.bottom < A.top) {
+                const mid = (A.top + B.bottom) / 2;
+                return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, mid], [posB[0], mid], posB];
+              } else if (posA[0] < posB[0] && posA[1] < posB[1] && A.right < B.left) {
+                const mid = (A.right + B.left) / 2;
+                return [posA, [mid, posA[1]], [mid, posB[1] + pad], [posB[0], posB[1] + pad], posB];
+              } else {
+                return [posA, [Math.max(A.right, B.right) + pad, posA[1]], [Math.max(A.right, B.right) + pad, Math.max(A.bottom, B.bottom) + pad], [posB[0], Math.max(A.bottom, B.bottom) + pad], posB];
+              }
             } else {
               console.error(`tB incorrect value!`);
             }
@@ -504,7 +513,7 @@
           connect(getIcon(0), [1, 0.5], getIcon(5), [0.25, 0.25], PathType.Curve);
 
           // elbow
-          connect(getIcon(6), [1, 0.5], getIcon(7), [1, 0.5], PathType.Elbow);
+          connect(getIcon(6), [1, 0.5], getIcon(7), [0.5, 1], PathType.Elbow);
 
           // line and elbow
           connect(getIcon(1), [0.5, 1], getIcon(8), [0.5, 0], PathType.Line);
