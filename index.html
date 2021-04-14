@@ -96,8 +96,8 @@
         loadShape('./lib/rect1.png', 600, 50, nIcons++);
         loadShape('./lib/rect.png', 900, 500, nIcons++);
 
-        loadShape('./lib/rect.png', 7000, 500, nIcons++);
-        loadShape('./lib/rect.png', 7000, 600, nIcons++);
+        loadShape('./lib/rect.png', 600, 600, nIcons++); // 6
+        loadShape('./lib/rect.png', 600, 700, nIcons++); // 7
 
         loadShape('./lib/rect.png', 100, 550, nIcons++); // 8
         loadShape('./lib/rect.png', 300, 550, nIcons++); // 9
@@ -131,7 +131,7 @@
             return str;
           } else { // polyline
             if (points.length < 2) {
-              console.error('size of points < 2!');
+              console.error(`size of points ${points.length} < 2! `);
             }
             let str = "M" + points[0][0] + ',' + points[0][1] + ',';
             for (let i = 1; i < points.length; i++) {
@@ -207,8 +207,20 @@
 
         function getPathPoints(objA, anchorA, objB, anchorB, pathType) {
 
-          const start = [objA.left, objA.top];
-          const end = [objB.left, objB.top];
+          const bdA = {
+            left: objA.left - objA.width / 2,
+            right: objA.left + objA.width / 2,
+            top: objA.top - objA.height / 2,
+            bottom: objA.top + objA.height / 2
+          };
+
+          const bdB = {
+            left: objB.left - objB.width / 2,
+            right: objB.left + objB.width / 2,
+            top: objB.top - objB.height / 2,
+            bottom: objB.top + objB.height / 2
+          };
+
           const [posA, tA] = getAnchorInfo(objA, anchorA);
           const [posB, tB] = getAnchorInfo(objB, anchorB);
 
@@ -216,7 +228,9 @@
           if (pathType === PathType.Line) {
             return [posA, posB];
           } else if (pathType === PathType.Elbow) {
-            return [posA, [posA[0], (posA[1] + posB[1]) / 2], [posB[0], (posA[1] + posB[1]) / 2], posB];
+            return getElbowPath(bdA, posA, tA, bdB, posB, tB);
+            // return [posA, posB];
+            // return [posA, [posA[0], (posA[1] + posB[1]) / 2], [posB[0], (posA[1] + posB[1]) / 2], posB];
           } else { // curve
             // here tangent is always available and normalized(because we only rotate unit vectors), it is required by curves
             const spanA = Math.abs((posA[0] - posB[0]) * tA[0] + (posA[1] - posB[1]) * tA[1]) / 2;
@@ -226,6 +240,51 @@
             const TPB = [posB[0] + tB[0] * spanB, posB[1] + tB[1] * spanB];
 
             return [posA, TPA, TPB, posB];
+          }
+        }
+
+        // first handle tA = (1,0) case, and validate each case, return [[x,y],[x,y],[x,y]]
+        function getElbowPath(A, posA, tA, B, posB, tB, pad = 20) {
+          if (tA[0] === 1 && tA[1] === 0) {
+            // fixed A: right
+            if (tB[0] === -1 && tB[1] === 0) {
+              // B: left              
+              if (A.right <= B.left) { // case 1: B is right of A
+                // console.log(`case 1`);
+                return [posA, [(posA[0] + posB[0]) / 2, posA[1]], [(posA[0] + posB[0]) / 2, posB[1]], posB];
+              } else if (B.right <= A.left && ((B.bottom >= A.top && B.bottom <= A.bottom) || (B.top >= A.top && B.top <= A.bottom))) { // case 2: B is left of A and no passway 
+                // console.log(`case 2`);
+                const minTop = Math.min(A.top, B.top);
+                const maxBottom = Math.max(A.bottom, B.bottom);
+                const disTops = posA[1] - minTop + posB[1] - minTop;
+                const disBottom = maxBottom - posA[1] + maxBottom - posB[1];
+                if (disTops < disBottom) {
+                  return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, minTop - pad], [posB[0] - pad, minTop - pad], [posB[0] - pad, posB[1]], posB];
+                } else {
+                  return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, maxBottom + pad], [posB[0] - pad, maxBottom + pad], [posB[0] - pad, posB[1]], posB];
+                }
+
+              } else { // case 3: 
+                // console.log(`case 3`);
+                const mid = (A.top > B.bottom) ? (A.top + B.bottom) / 2 : (A.bottom + B.top) / 2;
+                return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, mid], [posB[0] - pad, mid], [posB[0] - pad, posB[1]], posB];
+              }
+
+
+
+
+
+            } else if (tB[0] === 0 && tB[1] === -1) {
+              // B: up
+
+            } else if (tB[0] === 1 && tB[1] === 0) {
+              // B: right
+            } else if (tB[0] === 0 && tB[1] === 1) {
+              // B: down
+            } else {
+              console.error(`tB incorrect value!`);
+            }
+
           }
         }
 
@@ -404,7 +463,7 @@
           connect(getIcon(0), [1, 0.5], getIcon(5), [0.25, 0.25], PathType.Curve);
 
           // elbow
-          connect(getIcon(6), [1, 0.5], getIcon(7), [0.5, 0], PathType.Elbow);
+          connect(getIcon(6), [1, 0.5], getIcon(7), [0, 0.2], PathType.Elbow);
 
           // line and elbow
           connect(getIcon(1), [0.5, 1], getIcon(8), [0.5, 0], PathType.Line);
