@@ -246,90 +246,143 @@
           }
         }
 
-        // first handle tA = (1,0) case, and validate each case, return [[x,y],[x,y],[x,y]]
+        function rotatePoint(angle, x, y) {
+          const theta = Math.PI * angle / 180;
+          const cos = Math.cos(theta);
+          const sin = Math.sin(theta);
+          return [cos * x - sin * y, sin * x + cos * y];
+        }
+
+        function roundValue(x) {
+          const eps = 1e-15;
+          if (Math.abs(x) < eps) {
+            return 0;
+          }
+          if (Math.abs(1 - x) < eps) {
+            return 1;
+          }
+
+          return x;
+        }
+
+        function rotateBound(angle, bound) {
+          const tl = rotatePoint(angle, bound.left, bound.top);
+          const br = rotatePoint(angle, bound.right, bound.bottom);
+          return {
+            left: Math.min(tl[0], br[0]),
+            right: Math.max(tl[0], br[0]),
+            top: Math.min(tl[1], br[1]),
+            bottom: Math.max(tl[1], br[1]),
+          };
+        }
+
         function getElbowPath(A, posA, tA, B, posB, tB, pad = 20) {
           if (tA[0] === 1 && tA[1] === 0) {
-            // fixed tA: right
-            if (tB[0] === -1 && tB[1] === 0) {
-              // tB: pointing left              
-              if (A.right <= B.left) { // case 1: B is right of A
-                return [posA, [(posA[0] + posB[0]) / 2, posA[1]], [(posA[0] + posB[0]) / 2, posB[1]], posB];
-              } else if (B.right <= A.left && ((B.bottom >= A.top && B.bottom <= A.bottom) || (B.top >= A.top && B.top <= A.bottom))) { // case 2: B is left of A and no passway 
-                const minTop = Math.min(A.top, B.top);
-                const maxBottom = Math.max(A.bottom, B.bottom);
-                const disTops = posA[1] - minTop + posB[1] - minTop;
-                const disBottom = maxBottom - posA[1] + maxBottom - posB[1];
-                if (disTops < disBottom) {
-                  return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, minTop - pad], [posB[0] - pad, minTop - pad], [posB[0] - pad, posB[1]], posB];
-                } else {
-                  return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, maxBottom + pad], [posB[0] - pad, maxBottom + pad], [posB[0] - pad, posB[1]], posB];
-                }
+            return getElbowPathPointingRight(A, posA, tA, B, posB, tB, pad);
+          }
 
-              } else { // case 3: 
-                const mid = (A.top > B.bottom) ? (A.top + B.bottom) / 2 : (A.bottom + B.top) / 2;
-                return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, mid], [posB[0] - pad, mid], [posB[0] - pad, posB[1]], posB];
-              }
+          // tA is up, rotate clockwise 90 along (0, 0)
+          let angle = 0;
+          if (tA[0] === 0 && tA[1] === -1) {
+            angle = 90;
+          } else if (tA[0] === 0 && tA[1] === 1) {
+            angle = 270;
+          } else if (tA[0] === -1 && tA[1] === 0) {
+            angle = 180;
+          }
 
-            } else if (tB[0] === 0 && tB[1] === -1) {
-              // tB: pointing up
-              if (posA[1] > posB[1] && posA[0] < posB[0]) { // case 1
-                if (A.right < B.left) { // can pass middle
-                  const mid = (A.right + B.left) / 2;
-                  return [posA, [mid, posA[1]], [mid, posB[1] - pad], [mid, posB[1] - pad], [posB[0], posB[1] - pad], posB];
-                } else {
-                  return [posA, [B.right + pad, posA[1]], [B.right + pad, B.top - pad], [posB[0], posB[1] - pad], posB];
-                }
-              } else { // case 2
-                if (posB[0] > posA[0]) {
-                  return [posA, [posB[0], posA[1]], posB];
-                }
-                else if (A.bottom < B.top) {
-                  const mid = (A.bottom + B.top) / 2;
-                  return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, mid], [posB[0], mid], posB];
-                } else {
-                  return [posA, [Math.max(A.right, B.right) + pad, posA[1]], [Math.max(A.right, B.right) + pad, Math.min(A.top, B.top) - pad], [posB[0], Math.min(A.top, B.top) - pad], posB];
-                }
-              }
-            } else if (tB[0] === 1 && tB[1] === 0) {
-              // tB: pointing right
-              if (posA[1] < posB[1]) { // posA is up, posB is down
-                if (posB[1] - A.bottom > pad || B.top - posA[1] > pad || (B.right > A.left && posB[0] < posA[0])) {
-                  return [posA, [Math.max(posA[0], posB[0]) + pad, posA[1]], [Math.max(posA[0], posB[0]) + pad, posB[1]], posB];
-                } else if (posA[0] > posB[0]) { // A is right
-                  const mid = (A.left + B.right) / 2;
-                  return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, A.bottom + pad], [mid, A.bottom + pad], [mid, posB[1]], posB];
-                } else {
-                  const mid = (A.right + B.left) / 2;
-                  return [posA, [mid, posA[1]], [mid, B.top - pad], [B.right + pad, B.top - pad], [posB[0] + pad, posB[1]], posB];
-                }
-              } else { // posA is down
-                if (posA[1] - B.bottom > pad || A.top - posB[1] > pad || (B.right > A.left && posB[0] < posA[0])) {
-                  return [posA, [Math.max(posA[0], posB[0]) + pad, posA[1]], [Math.max(posA[0], posB[0]) + pad, posB[1]], posB];
-                } else if (posA[0] > posB[0]) { // A is right
-                  const mid = (A.left + B.right) / 2;
-                  return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, A.top - pad], [mid, A.top - pad], [mid, posB[1]], posB];
-                } else {
-                  const mid = (A.right + B.left) / 2;
-                  return [posA, [mid, posA[1]], [mid, B.bottom + pad], [B.right + pad, B.bottom + pad], [posB[0] + pad, posB[1]], posB];
-                }
-              }
-            } else if (tB[0] === 0 && tB[1] === 1) {
-              // tB: down
-              if (posA[0] < posB[0] && posA[1] > posB[1]) {
-                return [posA, [posB[0], posA[1]], posB];
-              } else if (posB[0] < posA[0] && B.bottom < A.top) {
-                const mid = (A.top + B.bottom) / 2;
-                return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, mid], [posB[0], mid], posB];
-              } else if (posA[0] < posB[0] && posA[1] < posB[1] && A.right < B.left) {
-                const mid = (A.right + B.left) / 2;
-                return [posA, [mid, posA[1]], [mid, posB[1] + pad], [posB[0], posB[1] + pad], posB];
+          const newA = rotateBound(angle, A);
+          const newB = rotateBound(angle, B);
+          const pA = rotatePoint(angle, posA[0], posA[1]);
+          const pB = rotatePoint(angle, posB[0], posB[1]);
+          let newTb = rotatePoint(angle, tB[0], tB[1]);
+          newTb = [roundValue(newTb[0]), roundValue(newTb[1])];
+
+          const rotatedPath = getElbowPathPointingRight(newA, pA, [1, 0], newB, pB, newTb, pad);
+          return rotatedPath.map(pt => rotatePoint(-angle, pt[0], pt[1]));
+        }
+
+        // first handle tA = (1,0) case, and validate each case, return [[x,y],[x,y],[x,y]]
+        function getElbowPathPointingRight(A, posA, tA, B, posB, tB, pad) {
+          // fixed tA: right
+          if (tB[0] === -1 && tB[1] === 0) {
+            // tB: pointing left              
+            if (A.right <= B.left) { // case 1: B is right of A
+              return [posA, [(posA[0] + posB[0]) / 2, posA[1]], [(posA[0] + posB[0]) / 2, posB[1]], posB];
+            } else if (B.right <= A.left && ((B.bottom >= A.top && B.bottom <= A.bottom) || (B.top >= A.top && B.top <= A.bottom))) { // case 2: B is left of A and no passway 
+              const minTop = Math.min(A.top, B.top);
+              const maxBottom = Math.max(A.bottom, B.bottom);
+              const disTops = posA[1] - minTop + posB[1] - minTop;
+              const disBottom = maxBottom - posA[1] + maxBottom - posB[1];
+              if (disTops < disBottom) {
+                return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, minTop - pad], [posB[0] - pad, minTop - pad], [posB[0] - pad, posB[1]], posB];
               } else {
-                return [posA, [Math.max(A.right, B.right) + pad, posA[1]], [Math.max(A.right, B.right) + pad, Math.max(A.bottom, B.bottom) + pad], [posB[0], Math.max(A.bottom, B.bottom) + pad], posB];
+                return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, maxBottom + pad], [posB[0] - pad, maxBottom + pad], [posB[0] - pad, posB[1]], posB];
               }
-            } else {
-              console.error(`tB incorrect value!`);
+
+            } else { // case 3: 
+              const mid = (A.top > B.bottom) ? (A.top + B.bottom) / 2 : (A.bottom + B.top) / 2;
+              return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, mid], [posB[0] - pad, mid], [posB[0] - pad, posB[1]], posB];
             }
 
+          } else if (tB[0] === 0 && tB[1] === -1) {
+            // tB: pointing up
+            if (posA[1] > posB[1] && posA[0] < posB[0]) { // case 1
+              if (A.right < B.left) { // can pass middle
+                const mid = (A.right + B.left) / 2;
+                return [posA, [mid, posA[1]], [mid, posB[1] - pad], [mid, posB[1] - pad], [posB[0], posB[1] - pad], posB];
+              } else {
+                return [posA, [B.right + pad, posA[1]], [B.right + pad, B.top - pad], [posB[0], posB[1] - pad], posB];
+              }
+            } else { // case 2
+              if (posB[0] > posA[0]) {
+                return [posA, [posB[0], posA[1]], posB];
+              }
+              else if (A.bottom < B.top) {
+                const mid = (A.bottom + B.top) / 2;
+                return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, mid], [posB[0], mid], posB];
+              } else {
+                return [posA, [Math.max(A.right, B.right) + pad, posA[1]], [Math.max(A.right, B.right) + pad, Math.min(A.top, B.top) - pad], [posB[0], Math.min(A.top, B.top) - pad], posB];
+              }
+            }
+          } else if (tB[0] === 1 && tB[1] === 0) {
+            // tB: pointing right
+            if (posA[1] < posB[1]) { // posA is up, posB is down
+              if (posB[1] - A.bottom > pad || B.top - posA[1] > pad || (B.right > A.left && posB[0] < posA[0])) {
+                return [posA, [Math.max(posA[0], posB[0]) + pad, posA[1]], [Math.max(posA[0], posB[0]) + pad, posB[1]], posB];
+              } else if (posA[0] > posB[0]) { // A is right
+                const mid = (A.left + B.right) / 2;
+                return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, A.bottom + pad], [mid, A.bottom + pad], [mid, posB[1]], posB];
+              } else {
+                const mid = (A.right + B.left) / 2;
+                return [posA, [mid, posA[1]], [mid, B.top - pad], [B.right + pad, B.top - pad], [posB[0] + pad, posB[1]], posB];
+              }
+            } else { // posA is down
+              if (posA[1] - B.bottom > pad || A.top - posB[1] > pad || (B.right > A.left && posB[0] < posA[0])) {
+                return [posA, [Math.max(posA[0], posB[0]) + pad, posA[1]], [Math.max(posA[0], posB[0]) + pad, posB[1]], posB];
+              } else if (posA[0] > posB[0]) { // A is right
+                const mid = (A.left + B.right) / 2;
+                return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, A.top - pad], [mid, A.top - pad], [mid, posB[1]], posB];
+              } else {
+                const mid = (A.right + B.left) / 2;
+                return [posA, [mid, posA[1]], [mid, B.bottom + pad], [B.right + pad, B.bottom + pad], [posB[0] + pad, posB[1]], posB];
+              }
+            }
+          } else if (tB[0] === 0 && tB[1] === 1) {
+            // tB: down
+            if (posA[0] < posB[0] && posA[1] > posB[1]) {
+              return [posA, [posB[0], posA[1]], posB];
+            } else if (posB[0] < posA[0] && B.bottom < A.top) {
+              const mid = (A.top + B.bottom) / 2;
+              return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, mid], [posB[0], mid], posB];
+            } else if (posA[0] < posB[0] && posA[1] < posB[1] && A.right < B.left) {
+              const mid = (A.right + B.left) / 2;
+              return [posA, [mid, posA[1]], [mid, posB[1] + pad], [posB[0], posB[1] + pad], posB];
+            } else {
+              return [posA, [Math.max(A.right, B.right) + pad, posA[1]], [Math.max(A.right, B.right) + pad, Math.max(A.bottom, B.bottom) + pad], [posB[0], Math.max(A.bottom, B.bottom) + pad], posB];
+            }
+          } else {
+            console.error(`tB incorrect value!`);
           }
         }
 
@@ -508,7 +561,7 @@
           connect(getIcon(0), [1, 0.5], getIcon(5), [0.25, 0.25], PathType.Curve);
 
           // elbow
-          connect(getIcon(6), [1, 0.5], getIcon(7), [0.5, 1], PathType.Elbow);
+          connect(getIcon(6), [0, 0.5], getIcon(7), [0.5, 1], PathType.Elbow);
 
           // line and elbow
           connect(getIcon(1), [0.5, 1], getIcon(8), [0.5, 0], PathType.Line);
