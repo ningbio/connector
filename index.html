@@ -85,7 +85,7 @@
         const maxImageDimension = 300; // pix
         const default_point_color = 'rgba(255, 200, 0, 0.5)';
         const merging_point_color = 'rgba(255, 0, 0, 0.5)';
-        const PathType = { "Line": 0, "Elbow": 1, "Curve": 2 };
+        const PathType = { "Line": 0, "Elbow": 1, "Cubic": 2, "Quadratic": 3 };
 
         loadShape('./lib/rect.png', 300, 200, nIcons++); // 0
 
@@ -123,7 +123,7 @@
         }
 
         function getPathString(type, points) {
-          if (type === PathType.Curve) {
+          if (type === PathType.Cubic) {
             if (points.length !== 4) {
               console.error('non-cubic bezier curve!');
             }
@@ -149,7 +149,7 @@
         }
 
         // get the anchor position and tangent based on [u,v]
-        function getAnchorInfo(obj, uv, pathType = PathType.Curve) {
+        function getAnchorInfo(obj, uv, pathType = PathType.Cubic) {
           const [cx, cy] = [obj.left, obj.top];
           const u = uv[0], v = uv[1];
           if (!uv) {
@@ -553,12 +553,12 @@
           // const obj = canvas.getActiveObject();
           //const connectors = canvas.getObjects().filter(obj => obj.type === 'image');
 
-          connect(getIcon(0), [0.4, 1], getIcon(1), [0.5, 0], PathType.Curve);
-          connect(getIcon(0), [0.5, 1], getIcon(2), [0.5, 0], PathType.Curve);
-          connect(getIcon(0), [0.6, 1], getIcon(3), [0.5, 0], PathType.Curve);
+          connect(getIcon(0), [0.4, 1], getIcon(1), [0.5, 0], PathType.Cubic);
+          connect(getIcon(0), [0.5, 1], getIcon(2), [0.5, 0], PathType.Cubic);
+          connect(getIcon(0), [0.6, 1], getIcon(3), [0.5, 0], PathType.Cubic);
 
-          connect(getIcon(0), [1, 0.5], getIcon(4), [0, 0.5], PathType.Curve);
-          connect(getIcon(0), [1, 0.5], getIcon(5), [0.25, 0.25], PathType.Curve);
+          connect(getIcon(0), [1, 0.5], getIcon(4), [0, 0.5], PathType.Cubic);
+          connect(getIcon(0), [1, 0.5], getIcon(5), [0.25, 0.25], PathType.Cubic);
 
           // elbow
           connect(getIcon(6), [0, 0.5], getIcon(7), [0.5, 1], PathType.Elbow);
