@@ -123,7 +123,16 @@
         }
 
         function getPathString(type, points) {
-          if (type === PathType.Cubic) {
+          if (type === PathType.Quadratic) {
+            if (points.length !== 3) {
+              console.error('non-quadratic bezier curve!');
+            }
+
+            let str = "M" + points[0][0] + ',' + points[0][1];
+            str += "Q" + points[1][0] + ',' + points[1][1] + ',';
+            str += points[2][0] + ',' + points[2][1];
+            return str;
+          } else if (type === PathType.Cubic) {
             if (points.length !== 4) {
               console.error('non-cubic bezier curve!');
             }
@@ -234,7 +243,13 @@
           } else if (pathType === PathType.Elbow) {
             return getElbowPath(bdA, posA, tA, bdB, posB, tB);
             // return [posA, posB];
-          } else { // curve
+          } else if (pathType === PathType.Quadratic) { // quadratic curve, non-s shape
+            const mid = [(posA[0] + posB[0]) / 2, (posA[1] + posB[1]) / 2];
+            const norm = [-(posB[1] - posA[1]), posB[0] - posA[0]];
+            const bending = 0.3; // normally [-0.5, 0,5], 0 means it's a straight line
+            const tp = [mid[0] + norm[0] * bending, mid[1] + norm[1] * bending];
+            return [posA, tp, posB];
+          } else { // cubic curve
             // here tangent is always available and normalized(because we only rotate unit vectors), it is required by curves
             const spanA = Math.abs((posA[0] - posB[0]) * tA[0] + (posA[1] - posB[1]) * tA[1]) / 2;
             const spanB = Math.abs((posA[0] - posB[0]) * tB[0] + (posA[1] - posB[1]) * tB[1]) / 2;
@@ -564,7 +579,7 @@
           connect(getIcon(6), [0, 0.5], getIcon(7), [0.5, 1], PathType.Elbow);
 
           // line and elbow
-          connect(getIcon(1), [0.5, 1], getIcon(8), [0.5, 0], PathType.Line);
+          connect(getIcon(1), [0.5, 1], getIcon(8), [0.5, 0], PathType.Quadratic);
 
           connect(getIcon(9), [1, 0.5], getIcon(10), [0, 0.5], PathType.Elbow);
           connect(getIcon(9), [1, 0.5], getIcon(11), [0, 0.5], PathType.Elbow);
