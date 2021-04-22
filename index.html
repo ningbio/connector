@@ -15,9 +15,9 @@
     <p>
       <button id="anchor">load connections</button>
       <button id="showHelper">toggle ui</button>
-      <!-- <button id="shrink">shrink</button>
-      <button id="expand">expand</button>
-      <button id="load-circle">circle</button>
+      <button id="inc-bend">inc-bend</button>
+      <button id="dec-bend">dec-bend</button>
+      <!-- <button id="load-circle">circle</button>
       <button id="load-bar1">bar1</button>
       <button id="load-bar2">bar2</button>
       <button id="load-bar3">bar3</button>
@@ -86,6 +86,7 @@
         const default_point_color = 'rgba(255, 200, 0, 0.5)';
         const merging_point_color = 'rgba(255, 0, 0, 0.5)';
         const PathType = { "Line": 0, "Elbow": 1, "Cubic": 2, "Quadratic": 3 };
+        let bending = 0.3; // normally [-0.5, 0,5], 0 means it's a straight line
 
         loadShape('./lib/rect.png', 300, 200, nIcons++); // 0
 
@@ -119,6 +120,19 @@
               const newPath = new fabric.Path(svgStr);
               con.path = newPath.path;
             }
+          }
+        }
+
+        function updateAllConnectors() {
+          for (let i = 0; i < renderConnectors.length; i++) {
+            const con = renderConnectors[i];
+            const index = con.index;
+            const objA = con.objA;
+            const objB = con.objB;
+            const points = getPathPoints(objA, con.anchorA, objB, con.anchorB, con.pathType);
+            const svgStr = getPathString(con.pathType, points);
+            const newPath = new fabric.Path(svgStr);
+            con.path = newPath.path;
           }
         }
 
@@ -220,14 +234,14 @@
 
         function getPathPoints(objA, anchorA, objB, anchorB, pathType) {
 
-          const bdA = {
+          const boundA = {
             left: objA.left - objA.width / 2,
             right: objA.left + objA.width / 2,
             top: objA.top - objA.height / 2,
             bottom: objA.top + objA.height / 2
           };
 
-          const bdB = {
+          const boundB = {
             left: objB.left - objB.width / 2,
             right: objB.left + objB.width / 2,
             top: objB.top - objB.height / 2,
@@ -241,12 +255,12 @@
           if (pathType === PathType.Line) {
             return [posA, posB];
           } else if (pathType === PathType.Elbow) {
-            return getElbowPath(bdA, posA, tA, bdB, posB, tB);
+            return getElbowPath(boundA, posA, tA, boundB, posB, tB);
             // return [posA, posB];
           } else if (pathType === PathType.Quadratic) { // quadratic curve, non-s shape
             const mid = [(posA[0] + posB[0]) / 2, (posA[1] + posB[1]) / 2];
             const norm = [-(posB[1] - posA[1]), posB[0] - posA[0]];
-            const bending = 0.3; // normally [-0.5, 0,5], 0 means it's a straight line
+
             const tp = [mid[0] + norm[0] * bending, mid[1] + norm[1] * bending];
             return [posA, tp, posB];
           } else { // cubic curve
@@ -291,9 +305,9 @@
           };
         }
 
-        function getElbowPath(A, posA, tA, B, posB, tB, pad = 20) {
+        function getElbowPath(boundA, posA, tA, boundB, posB, tB, pad = 20) {
           if (tA[0] === 1 && tA[1] === 0) {
-            return getElbowPathPointingRight(A, posA, tA, B, posB, tB, pad);
+            return getElbowPathPointingRight(boundA, posA, tA, boundB, posB, tB, pad);
           }
 
           // tA is up, rotate clockwise 90 along (0, 0)
@@ -306,8 +320,8 @@
             angle = 180;
           }
 
-          const newA = rotateBound(angle, A);
-          const newB = rotateBound(angle, B);
+          const newA = rotateBound(angle, boundA);
+          const newB = rotateBound(angle, boundB);
           const pA = rotatePoint(angle, posA[0], posA[1]);
           const pB = rotatePoint(angle, posB[0], posB[1]);
           let newTb = rotatePoint(angle, tB[0], tB[1]);
@@ -704,6 +718,21 @@
         // document.getElementById('load-cell').onclick = (function () { loadShape('./lib/6.png'); });
         document.getElementById('load-last').onclick = (function () { loadShape(lastFile, nIcons++); });
         document.getElementById('load-custom').addEventListener('change', customLoad, false);
+
+        document.getElementById('inc-bend').onclick = (function () {
+          bending += 0.05;
+          updateAllConnectors();
+          solveAndUpdate();
+
+          canvas.renderAll();
+        });
+        document.getElementById('dec-bend').onclick = (function () {
+          bending -= 0.05;
+          updateAllConnectors();
+          solveAndUpdate();
+
+          canvas.renderAll();
+        });
       })();
     </script>
 
