@@ -233,19 +233,19 @@
         }
 
         function getPathPoints(objA, anchorA, objB, anchorB, pathType) {
-
+          // need to consider scale when calc bounds, object default center is (left, top)
           const boundA = {
-            left: objA.left - objA.width / 2,
-            right: objA.left + objA.width / 2,
-            top: objA.top - objA.height / 2,
-            bottom: objA.top + objA.height / 2
+            left: objA.left - objA.width * objA.scaleX / 2,
+            right: objA.left + objA.width * objA.scaleX / 2,
+            top: objA.top - objA.height * objA.scaleY / 2,
+            bottom: objA.top + objA.height * objA.scaleY / 2
           };
 
           const boundB = {
-            left: objB.left - objB.width / 2,
-            right: objB.left + objB.width / 2,
-            top: objB.top - objB.height / 2,
-            bottom: objB.top + objB.height / 2
+            left: objB.left - objB.width * objB.scaleX / 2,
+            right: objB.left + objB.width * objB.scaleX / 2,
+            top: objB.top - objB.height * objB.scaleY / 2,
+            bottom: objB.top + objB.height * objB.scaleY / 2
           };
 
           const [posA, tA] = getAnchorInfo(objA, anchorA);
