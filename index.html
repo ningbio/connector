@@ -17,6 +17,8 @@
       <button id="showHelper">toggle ui</button>
       <button id="inc-bend">inc-bend</button>
       <button id="dec-bend">dec-bend</button>
+      <button id="inc-pad">inc-pad</button>
+      <button id="dec-pad">dec-pad</button>
       <!-- <button id="load-circle">circle</button>
       <button id="load-bar1">bar1</button>
       <button id="load-bar2">bar2</button>
@@ -86,7 +88,10 @@
         const default_point_color = 'rgba(255, 200, 0, 0.5)';
         const merging_point_color = 'rgba(255, 0, 0, 0.5)';
         const PathType = { "Line": 0, "Elbow": 1, "Cubic": 2, "Quadratic": 3 };
-        let bending = 0.3; // normally [-0.5, 0,5], 0 means it's a straight line
+        const g_elbow_padding = 20; // 20 px offset when elbow line conicide with bounds 
+        let g_bending = 0.3; // normally [-0.5, 0,5], 0 means it's a straight line
+        let g_padding = 0; // global end point padding for each connector line
+
 
         loadShape('./lib/rect.png', 300, 200, nIcons++); // 0
 
@@ -115,7 +120,7 @@
             const objA = con.objA;
             const objB = con.objB;
             if (objA === obj || objB === obj) {
-              const points = getPathPoints(objA, con.anchorA, objB, con.anchorB, con.pathType);
+              const points = getPathPoints(objA, con.anchorA, objB, con.anchorB, con.pathType, g_padding);
               const svgStr = getPathString(con.pathType, points);
               const newPath = new fabric.Path(svgStr);
               con.path = newPath.path;
@@ -129,7 +134,7 @@
             const index = con.index;
             const objA = con.objA;
             const objB = con.objB;
-            const points = getPathPoints(objA, con.anchorA, objB, con.anchorB, con.pathType);
+            const points = getPathPoints(objA, con.anchorA, objB, con.anchorB, con.pathType, g_padding);
             const svgStr = getPathString(con.pathType, points);
             const newPath = new fabric.Path(svgStr);
             con.path = newPath.path;
@@ -172,7 +177,7 @@
         }
 
         // get the anchor position and tangent based on [u,v]
-        function getAnchorInfo(obj, uv, pathType = PathType.Cubic) {
+        function getAnchorInfo(obj, uv, pathType, padding) {
           const [cx, cy] = [obj.left, obj.top];
           const u = uv[0], v = uv[1];
           if (!uv) {
@@ -196,7 +201,7 @@
             const nx = cosV * vec[0] - sinV * vec[1];
             const ny = sinV * vec[0] + cosV * vec[1];
             const len = halfH;
-            const pos = [cx + len * nx + (u - 0.5) * W * (-ny), cy + len * ny + (u - 0.5) * W * nx];
+            const pos = [cx + len * nx + (u - 0.5) * W * (-ny), cy + len * ny + (u - 0.5) * W * nx - padding | 0];
             return [pos, [nx, ny]];
           } else if (v === 1) {
             // attach bottom edge
@@ -204,7 +209,7 @@
             const nx = cosV * vec[0] - sinV * vec[1];
             const ny = sinV * vec[0] + cosV * vec[1];
             const len = halfH;
-            const pos = [cx + len * nx + (u - 0.5) * W * (ny), cy + len * ny + (u - 0.5) * W * (-nx)];
+            const pos = [cx + len * nx + (u - 0.5) * W * (ny), cy + len * ny + (u - 0.5) * W * (-nx) + padding | 0];
             return [pos, [nx, ny]];
           } else if (u === 0) {
             // attach left edge
@@ -212,7 +217,7 @@
             const nx = cosV * vec[0] - sinV * vec[1];
             const ny = sinV * vec[0] + cosV * vec[1];
             const len = halfW;
-            const pos = [cx + len * nx + (v - 0.5) * H * (ny), cy + len * ny + (v - 0.5) * H * (-nx)];
+            const pos = [cx + len * nx + (v - 0.5) * H * (ny) - padding | 0, cy + len * ny + (v - 0.5) * H * (-nx)];
             return [pos, [nx, ny]];
           } else if (u === 1) {
             // attach right edge
@@ -220,7 +225,7 @@
             const nx = cosV * vec[0] - sinV * vec[1];
             const ny = sinV * vec[0] + cosV * vec[1];
             const len = halfW;
-            const pos = [cx + len * nx + (v - 0.5) * H * (-ny), cy + len * ny + (v - 0.5) * H * nx];
+            const pos = [cx + len * nx + (v - 0.5) * H * (-ny) + padding | 0, cy + len * ny + (v - 0.5) * H * nx];
             return [pos, [nx, ny]];
           } else {
             // attach inner anchor
@@ -232,24 +237,37 @@
           }
         }
 
-        function getPathPoints(objA, anchorA, objB, anchorB, pathType) {
+        function getPathPoints(objA, anchorA, objB, anchorB, pathType, padding) {
           // need to consider scale when calc bounds, object default center is (left, top)
-          const boundA = {
+          let boundA = {
             left: objA.left - objA.width * objA.scaleX / 2,
             right: objA.left + objA.width * objA.scaleX / 2,
             top: objA.top - objA.height * objA.scaleY / 2,
             bottom: objA.top + objA.height * objA.scaleY / 2
           };
 
-          const boundB = {
+          let boundB = {
             left: objB.left - objB.width * objB.scaleX / 2,
             right: objB.left + objB.width * objB.scaleX / 2,
             top: objB.top - objB.height * objB.scaleY / 2,
             bottom: objB.top + objB.height * objB.scaleY / 2
           };
 
-          const [posA, tA] = getAnchorInfo(objA, anchorA);
-          const [posB, tB] = getAnchorInfo(objB, anchorB);
+          // padding change boundA, boundB
+          if (padding) {
+            boundA.left -= padding;
+            boundA.right += padding;
+            boundA.top -= padding;
+            boundA.bottom += padding;
+
+            boundB.left -= padding;
+            boundB.right += padding;
+            boundB.top -= padding;
+            boundB.bottom += padding;
+          }
+
+          const [posA, tA] = getAnchorInfo(objA, anchorA, PathType.Cubic, padding);
+          const [posB, tB] = getAnchorInfo(objB, anchorB, PathType.Cubic, padding);
 
           // compute anchor positions based on [u,v]
           if (pathType === PathType.Line) {
@@ -261,7 +279,7 @@
             const mid = [(posA[0] + posB[0]) / 2, (posA[1] + posB[1]) / 2];
             const norm = [-(posB[1] - posA[1]), posB[0] - posA[0]];
 
-            const tp = [mid[0] + norm[0] * bending, mid[1] + norm[1] * bending];
+            const tp = [mid[0] + norm[0] * g_bending, mid[1] + norm[1] * g_bending];
             return [posA, tp, posB];
           } else { // cubic curve
             // here tangent is always available and normalized(because we only rotate unit vectors), it is required by curves
@@ -305,7 +323,7 @@
           };
         }
 
-        function getElbowPath(boundA, posA, tA, boundB, posB, tB, pad = 20) {
+        function getElbowPath(boundA, posA, tA, boundB, posB, tB, pad = g_elbow_padding) {
           if (tA[0] === 1 && tA[1] === 0) {
             return getElbowPathPointingRight(boundA, posA, tA, boundB, posB, tB, pad);
           }
@@ -415,9 +433,9 @@
           }
         }
 
-        function connect(objA, anchorA, objB, anchorB, pathType = PathType.Elbow) {
+        function connect(objA, anchorA, objB, anchorB, pathType, padding) {
           // fetch path data from A, B layout
-          const points = getPathPoints(objA, anchorA, objB, anchorB, pathType);
+          const points = getPathPoints(objA, anchorA, objB, anchorB, pathType, padding);
           // const points = [[50, 50], [100, 50], [100, 100], [150, 100]];
           const svgStr = getPathString(pathType, points);
 
@@ -435,7 +453,7 @@
             anchorA,
             objB,
             anchorB,
-            offset: 0,
+            padding,
           });
           renderConnectors.push(renderLine);
           canvas.add(renderLine);
@@ -582,22 +600,22 @@
           // const obj = canvas.getActiveObject();
           //const connectors = canvas.getObjects().filter(obj => obj.type === 'image');
 
-          connect(getIcon(0), [0.4, 1], getIcon(1), [0.5, 0], PathType.Cubic);
-          connect(getIcon(0), [0.5, 1], getIcon(2), [0.5, 0], PathType.Cubic);
-          connect(getIcon(0), [0.6, 1], getIcon(3), [0.5, 0], PathType.Cubic);
+          connect(getIcon(0), [0.4, 1], getIcon(1), [0.5, 0], PathType.Cubic, g_padding);
+          connect(getIcon(0), [0.5, 1], getIcon(2), [0.5, 0], PathType.Cubic, g_padding);
+          connect(getIcon(0), [0.6, 1], getIcon(3), [0.5, 0], PathType.Cubic, g_padding);
 
-          connect(getIcon(0), [1, 0.5], getIcon(4), [0, 0.5], PathType.Cubic);
-          connect(getIcon(0), [1, 0.5], getIcon(5), [0.25, 0.25], PathType.Cubic);
+          connect(getIcon(0), [1, 0.5], getIcon(4), [0, 0.5], PathType.Cubic, g_padding);
+          connect(getIcon(0), [1, 0.5], getIcon(5), [0.25, 0.25], PathType.Cubic, g_padding);
 
           // elbow
-          connect(getIcon(6), [0, 0.5], getIcon(7), [0.5, 1], PathType.Elbow);
+          connect(getIcon(6), [0, 0.5], getIcon(7), [0.5, 1], PathType.Elbow, g_padding);
 
           // line and elbow
-          connect(getIcon(1), [0.5, 1], getIcon(8), [0.5, 0], PathType.Quadratic);
+          connect(getIcon(1), [0.5, 1], getIcon(8), [0.5, 0], PathType.Quadratic, g_padding);
 
-          connect(getIcon(9), [1, 0.5], getIcon(10), [0, 0.5], PathType.Elbow);
-          connect(getIcon(9), [1, 0.5], getIcon(11), [0, 0.5], PathType.Elbow);
-          connect(getIcon(9), [1, 0.5], getIcon(12), [0, 0.5], PathType.Elbow);
+          connect(getIcon(9), [1, 0.5], getIcon(10), [0, 0.5], PathType.Elbow, g_padding);
+          connect(getIcon(9), [1, 0.5], getIcon(11), [0, 0.5], PathType.Elbow, g_padding);
+          connect(getIcon(9), [1, 0.5], getIcon(12), [0, 0.5], PathType.Elbow, g_padding);
 
           canvas.renderAll();
         }
@@ -720,19 +738,35 @@
         document.getElementById('load-custom').addEventListener('change', customLoad, false);
 
         document.getElementById('inc-bend').onclick = (function () {
-          bending += 0.05;
+          g_bending += 0.05;
           updateAllConnectors();
           solveAndUpdate();
-
           canvas.renderAll();
+          console.log(`g_bending = ${g_bending}`);
         });
         document.getElementById('dec-bend').onclick = (function () {
-          bending -= 0.05;
+          g_bending -= 0.05;
           updateAllConnectors();
           solveAndUpdate();
-
           canvas.renderAll();
+          console.log(`g_bending = ${g_bending}`);
         });
+
+        document.getElementById('inc-pad').onclick = (function () {
+          g_padding += 5;
+          updateAllConnectors();
+          solveAndUpdate();
+          canvas.renderAll();
+          console.log(`g_padding = ${g_padding}`);
+        });
+        document.getElementById('dec-pad').onclick = (function () {
+          g_padding -= 5;
+          updateAllConnectors();
+          solveAndUpdate();
+          canvas.renderAll();
+          console.log(`g_padding = ${g_padding}`);
+        });
+
       })();
     </script>
 
