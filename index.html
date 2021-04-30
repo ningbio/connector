@@ -166,7 +166,7 @@
         }
 
         // get the anchor position and tangent based on [u,v]
-        function getAnchorInfo(obj, uv, pathType, padding) {
+        function getAnchorInfo(obj, uv) {
           const [cx, cy] = [obj.left, obj.top];
           const u = uv[0], v = uv[1];
           if (!uv) {
@@ -190,7 +190,7 @@
             const nx = cosV * vec[0] - sinV * vec[1];
             const ny = sinV * vec[0] + cosV * vec[1];
             const len = halfH;
-            const pos = [cx + len * nx + (u - 0.5) * W * (-ny), cy + len * ny + (u - 0.5) * W * nx - padding | 0];
+            const pos = [cx + len * nx + (u - 0.5) * W * (-ny), cy + len * ny + (u - 0.5) * W * nx];
             return [pos, [nx, ny]];
           } else if (v === 1) {
             // attach bottom edge
@@ -198,7 +198,7 @@
             const nx = cosV * vec[0] - sinV * vec[1];
             const ny = sinV * vec[0] + cosV * vec[1];
             const len = halfH;
-            const pos = [cx + len * nx + (u - 0.5) * W * (ny), cy + len * ny + (u - 0.5) * W * (-nx) + padding | 0];
+            const pos = [cx + len * nx + (u - 0.5) * W * (ny), cy + len * ny + (u - 0.5) * W * (-nx)];
             return [pos, [nx, ny]];
           } else if (u === 0) {
             // attach left edge
@@ -206,7 +206,7 @@
             const nx = cosV * vec[0] - sinV * vec[1];
             const ny = sinV * vec[0] + cosV * vec[1];
             const len = halfW;
-            const pos = [cx + len * nx + (v - 0.5) * H * (ny) - padding | 0, cy + len * ny + (v - 0.5) * H * (-nx)];
+            const pos = [cx + len * nx + (v - 0.5) * H * (ny), cy + len * ny + (v - 0.5) * H * (-nx)];
             return [pos, [nx, ny]];
           } else if (u === 1) {
             // attach right edge
@@ -214,7 +214,7 @@
             const nx = cosV * vec[0] - sinV * vec[1];
             const ny = sinV * vec[0] + cosV * vec[1];
             const len = halfW;
-            const pos = [cx + len * nx + (v - 0.5) * H * (-ny) + padding | 0, cy + len * ny + (v - 0.5) * H * nx];
+            const pos = [cx + len * nx + (v - 0.5) * H * (-ny), cy + len * ny + (v - 0.5) * H * nx];
             return [pos, [nx, ny]];
           } else {
             // attach inner anchor
@@ -228,39 +228,28 @@
 
         function getPathPoints(objA, anchorA, objB, anchorB, pathType, padding) {
           // need to consider scale when calc bounds, object default center is (left, top)
-          let boundA = {
+          const boundA = {
             left: objA.left - objA.width * objA.scaleX / 2,
             right: objA.left + objA.width * objA.scaleX / 2,
             top: objA.top - objA.height * objA.scaleY / 2,
             bottom: objA.top + objA.height * objA.scaleY / 2
           };
 
-          let boundB = {
+          const boundB = {
             left: objB.left - objB.width * objB.scaleX / 2,
             right: objB.left + objB.width * objB.scaleX / 2,
             top: objB.top - objB.height * objB.scaleY / 2,
             bottom: objB.top + objB.height * objB.scaleY / 2
           };
 
-          // padding change boundA, boundB
-          if (padding) {
-            boundA.left -= padding;
-            boundA.right += padding;
-            boundA.top -= padding;
-            boundA.bottom += padding;
-
-            boundB.left -= padding;
-            boundB.right += padding;
-            boundB.top -= padding;
-            boundB.bottom += padding;
-          }
-
-          const [posA, tA] = getAnchorInfo(objA, anchorA, PathType.Cubic, padding);
-          const [posB, tB] = getAnchorInfo(objB, anchorB, PathType.Cubic, padding);
+          const [posA, tA] = getAnchorInfo(objA, anchorA);
+          const [posB, tB] = getAnchorInfo(objB, anchorB);
+          const paddedPosA = [posA[0] + tA[0] * padding, posA[1] + tA[1] * padding];
+          const paddedPosB = [posB[0] + tB[0] * padding, posB[1] + tB[1] * padding];
 
           // compute anchor positions based on [u,v]
           if (pathType === PathType.Line) {
-            return [posA, posB];
+            return [paddedPosA, paddedPosB];
           } else if (pathType === PathType.Elbow) {
             return getElbowPath(boundA, posA, tA, boundB, posB, tB);
             // return [posA, posB];
@@ -269,7 +258,7 @@
             const norm = [-(posB[1] - posA[1]), posB[0] - posA[0]];
 
             const tp = [mid[0] + norm[0] * g_bending, mid[1] + norm[1] * g_bending];
-            return [posA, tp, posB];
+            return [paddedPosA, tp, paddedPosB];
           } else { // cubic curve
             // here tangent is always available and normalized(because we only rotate unit vectors), it is required by curves
             const spanA = Math.abs((posA[0] - posB[0]) * tA[0] + (posA[1] - posB[1]) * tA[1]) / 2;
@@ -278,7 +267,7 @@
             const TPA = [posA[0] + tA[0] * spanA, posA[1] + tA[1] * spanA];
             const TPB = [posB[0] + tB[0] * spanB, posB[1] + tB[1] * spanB];
 
-            return [posA, TPA, TPB, posB];
+            return [paddedPosA, TPA, TPB, paddedPosB];
           }
         }
 
