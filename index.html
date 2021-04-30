@@ -19,17 +19,6 @@
       <button id="dec-bend">dec-bend</button>
       <button id="inc-pad">inc-pad</button>
       <button id="dec-pad">dec-pad</button>
-      <!-- <button id="load-circle">circle</button>
-      <button id="load-bar1">bar1</button>
-      <button id="load-bar2">bar2</button>
-      <button id="load-bar3">bar3</button>
-      <button id="load-nuron1">neuron1</button>
-      <button id="load-nuron2">neuron2</button>
-      <button id="load-nuron-head">neuron-head</button>
-      <button id="load-nuron-stem">neuron-stem</button>
-      <button id="load-nuron-tail">neuron-tail</button>
-      <button id="load-chemistry">chemistry</button> -->
-      <!-- <button id="load-cell">cell</button> -->
       <button id="load-last">load last</button>
       <input type="file" id="load-custom"></input>
     </p>
@@ -80,7 +69,7 @@
         let renderConnectors = [];
 
         let toMergeIndex = -1;
-        let showHelper = true;
+        let showHelper = false;
         let lastFile = '';
 
         const pointRadius = 5;
@@ -480,7 +469,7 @@
             objectCaching: false,
             selectable: dragable,
             hasControls: false,
-            visible: true,
+            visible: showHelper,
             renderOnAddRemove: false,
           });
           renderDots.push(dot);
@@ -557,9 +546,6 @@
         });
 
         function solveAndUpdate() {
-          // calc position dots position change
-          // solve();
-
           // update renderables (dots and lines)
           for (const dot of renderDots) {
             const idx = dot.index;
@@ -567,19 +553,6 @@
             dot.top = pos[idx].y;
             dot.setCoords();
           }
-
-          // for (const line of renderEdges) {
-          //   const idx = line.index;
-          //   const p1 = pos[edges[idx].from];
-          //   const p2 = pos[edges[idx].to];
-          //   line.set({ x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y });
-          // }
-
-          // update image assets
-          // for (const img of renderImages) {
-          //   updateImagePosition(img);
-          //   img.setCoords();
-          // }
         }
 
         function toogleHelper() {
@@ -723,17 +696,6 @@
           }
         }
 
-        // document.getElementById('load-circle').onclick = (function () { loadShape('./lib/circle.png'); });
-        // document.getElementById('load-bar1').onclick = (function () { loadShape('./lib/5.png'); });
-        // document.getElementById('load-bar2').onclick = (function () { loadShape('./lib/0.png'); });
-        // document.getElementById('load-bar3').onclick = (function () { loadShape('./lib/2.png'); });
-        // document.getElementById('load-nuron1').onclick = (function () { loadShape('./lib/1.png'); });
-        // document.getElementById('load-nuron2').onclick = (function () { loadShape('./lib/3.png'); });
-        // document.getElementById('load-nuron-head').onclick = (function () { loadShape('./lib/nuron-head.png'); });
-        // document.getElementById('load-nuron-stem').onclick = (function () { loadShape('./lib/nuron-stem.png'); });
-        // document.getElementById('load-nuron-tail').onclick = (function () { loadShape('./lib/nuron-tail.png'); });
-        // document.getElementById('load-chemistry').onclick = (function () { loadShape('./lib/4.png'); });
-        // document.getElementById('load-cell').onclick = (function () { loadShape('./lib/6.png'); });
         document.getElementById('load-last').onclick = (function () { loadShape(lastFile, nIcons++); });
         document.getElementById('load-custom').addEventListener('change', customLoad, false);
 
