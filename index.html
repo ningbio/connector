@@ -251,7 +251,10 @@
           if (pathType === PathType.Line) {
             return [paddedPosA, paddedPosB];
           } else if (pathType === PathType.Elbow) {
-            return getElbowPath(boundA, posA, tA, boundB, posB, tB);
+            let elbowPath = getElbowPath(boundA, posA, tA, boundB, posB, tB);
+            elbowPath[0] = paddedPosA;
+            elbowPath[elbowPath.length - 1] = paddedPosB;
+            return elbowPath;
             // return [posA, posB];
           } else if (pathType === PathType.Quadratic) { // quadratic curve, non-s shape
             const mid = [(posA[0] + posB[0]) / 2, (posA[1] + posB[1]) / 2];
