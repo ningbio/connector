@@ -78,8 +78,10 @@
         const merging_point_color = 'rgba(255, 0, 0, 0.5)';
         const PathType = { "Line": 0, "Elbow": 1, "Cubic": 2, "Quadratic": 3 };
         const g_elbow_padding = 20; // 20 px offset when elbow line conicide with bounds 
+        const g_snappingDistance = 15; // distance to show snapping candidates
         let g_bending = 0.3; // normally [-0.5, 0,5], 0 means it's a straight line
         let g_padding = 0; // global end point padding for each connector line
+
 
 
         loadShape('./lib/rect.png', 300, 200, nIcons++); // 0
@@ -100,6 +102,31 @@
         loadShape('./lib/rect.png', 400, 650, nIcons++); // 10
         loadShape('./lib/rect.png', 400, 750, nIcons++); // 11
         loadShape('./lib/rect1.png', 400, 550, nIcons++); // 12
+
+        // snap indicators
+        const snapDot = new fabric.Circle({
+          left: 0,
+          top: 0,
+          radius: pointRadius,
+          fill: default_point_color,
+          stroke: '#666',
+          strokeWidth: 3,
+          objectCaching: false,
+          selectable: false,
+          hasControls: false,
+          visible: true,
+          renderOnAddRemove: false,
+        });
+        canvas.add(snapDot);
+        const snapLine = new fabric.Line([0, 0, 10, 10], {
+          fill: 'red',
+          stroke: 'red',
+          strokeWidth: 2,
+          selectable: false,
+          evented: false,
+        });
+        canvas.add(snapLine);
+
 
         // update lines connected to this shape
         function updateConnectors(obj) {
@@ -224,6 +251,14 @@
             const pos = [cx + halfW * nx + (u - 0.5) * W * (-ny), cy + halfH * ny + (v - 0.5) * H * nx];
             return [pos, [nx, ny]];
           }
+        }
+
+        // give a position, get the closest [pos,tangent] on the fabric object
+        function getCloesestAnchor(obj, pos) {
+          // we need to consider scaling and rotation
+
+
+          return [[100, 100], [1, 0], 0];
         }
 
         function getPathPoints(objA, anchorA, objB, anchorB, pathType, padding) {
@@ -472,6 +507,37 @@
 
         let isDraggingAnchor = false;
         canvas.on({
+          'mouse:move': function (e) {
+            var pos = canvas.getPointer(e.e);
+            console.log(`${pos.x}, ${pos.y}`);
+
+            // loop all existing objects, not a efficient way!
+            let minDis = Number.MAX_VALUE;
+            let minPos = undefined, minTangent = undefined;
+            renderImages.forEach(obj => {
+              if (obj.type && obj.type === 'image') {
+                const [p, t, d] = getCloesestAnchor(obj, pos);
+                if (d < minDis) {
+                  minPos = p;
+                  minTangent = t;
+                  minDis = d;
+                }
+              }
+            });
+
+            if (minPos && minTangent) {
+              snapDot.left = minPos[0];
+              snapDot.top = minPos[1];
+
+              snapLine.x1 = minPos[0];
+              snapLine.y1 = minPos[1];
+
+              snapLine.x2 = minPos[0] + minTangent[0] * 100;
+              snapLine.y2 = minPos[1] + minTangent[1] * 100;
+            }
+
+            canvas.renderAll();
+          },
           'mouse:down': function (e) {
             if (!e.target) return;
             const obj = e.target;
