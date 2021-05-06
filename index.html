@@ -60,22 +60,19 @@
         let anchored = [];
         let edges = [];
         let nIcons = 0;
-        // let connectors = [];
 
         // visual elements
         let renderDots = [];
-        let renderEdges = [];
         let renderImages = [];
         let renderConnectors = [];
 
-        let toMergeIndex = -1;
+        // let toMergeIndex = -1;
         let showHelper = false;
         let lastFile = '';
 
         const pointRadius = 5;
         const maxImageDimension = 300; // pix
         const default_point_color = 'rgba(255, 200, 0, 0.5)';
-        const merging_point_color = 'rgba(255, 0, 0, 0.5)';
         const PathType = { "Line": 0, "Elbow": 1, "Cubic": 2, "Quadratic": 3 };
         const g_elbow_padding = 20; // 20 px offset when elbow line conicide with bounds 
         const g_snappingDistance = 15; // distance to show snapping candidates
@@ -126,7 +123,6 @@
           evented: false,
         });
         canvas.add(snapLine);
-
 
         // update lines connected to this shape
         function updateConnectors(obj) {
@@ -553,16 +549,16 @@
             if (obj.type && obj.type === 'dot') {
               console.log(`point ${obj.index} de-selected!`);
 
-              if (toMergeIndex >= 0) {
-                const curIdx = obj.index;
-                // back to normal
-                if (toMergeIndex < curIdx) {
-                  const otherDot = renderDots[toMergeIndex];
-                  otherDot.fill = default_point_color;
-                }
-                toMergeIndex = -1;
-                // solveAndUpdate();
-              }
+              // if (toMergeIndex >= 0) {
+              //   const curIdx = obj.index;
+              //   // back to normal
+              //   if (toMergeIndex < curIdx) {
+              //     const otherDot = renderDots[toMergeIndex];
+              //     otherDot.fill = default_point_color;
+              //   }
+              //   toMergeIndex = -1;
+              //   // solveAndUpdate();
+              // }
               canvas.renderAll();
             } else if (obj.type && obj.type === 'image') {
               for (const idx of obj.chainIndices) {
@@ -604,9 +600,6 @@
           // update all renderables
           for (const dot of renderDots) {
             dot.visible = showHelper;
-          }
-          for (const edge of renderEdges) {
-            edge.visible = showHelper;
           }
           canvas.renderAll();
         }
@@ -678,28 +671,6 @@
               y: cy + len * ny
             };
           }
-        }
-
-        function updateImagePosition(img) {
-          if (!img.chainIndices) console.error(`no chaining points detected`);
-          const [top, right, bottom, left] = img.chainIndices;
-
-          // three points are necessary to compute full transform to new position
-          // T = current(p1, p2, p3) * inverse(original (p1, p2, p3));
-          // 2d case is easier, use two vector is sufficient to compute rotation
-          const cx = [(pos[left].x + pos[right].x) / 2, (pos[left].y + pos[right].y) / 2];
-          const s = img.scaleX ? img.scaleX : 1;
-          const v1 = [0, -img.height / 2 * s]; // pointing up
-          const v2 = [img.width / 2 * s, 0]; // pointing right
-          const nv1 = [pos[top].x - cx[0], pos[top].y - cx[1]];
-          const nv2 = [pos[right].x - cx[0], pos[right].y - cx[1]];
-          const r0 = nv1[0] * v2[1] + nv2[0] * (-v1[1]);
-          const r1 = nv1[1] * v2[1] + nv2[1] * (-v1[1]);
-          const angle = Math.atan2(r1, r0);
-
-          img.left = cx[0];
-          img.top = cx[1];
-          img.angle = angle * 180 / Math.PI;
         }
 
         function loadShape(file, x = 300, y = 300, iconId) {
