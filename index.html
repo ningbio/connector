@@ -542,45 +542,30 @@
             if (!e.target) return;
             const obj = e.target;
             if (obj.type && obj.type === 'dot') {
-              // obj.opacity = 0.5;
-              // fixed[obj.index] = true;
               console.log(`point ${obj.index} selected!`);
               canvas.renderAll();
             } else if (obj.type && obj.type === 'image') {
-              // for (const idx of obj.chainIndices) {
-              //   fixed[idx] = true;
-              // }
             }
           },
           'mouse:up': function (e) {
             if (!e.target) return;
             const obj = e.target;
             if (obj.type && obj.type === 'dot') {
-              // obj.opacity = 1;
-              // fixed[obj.index] = false;
               console.log(`point ${obj.index} de-selected!`);
 
               if (toMergeIndex >= 0) {
-                // console.log(`merging points ${obj.index} and ${toMergeIndex}`);
-                // // do the merging
                 const curIdx = obj.index;
-                // mergePoints(obj.index, toMergeIndex);
-
                 // back to normal
                 if (toMergeIndex < curIdx) {
                   const otherDot = renderDots[toMergeIndex];
                   otherDot.fill = default_point_color;
                 }
                 toMergeIndex = -1;
-                // merge changed relative position, so need to solve
                 // solveAndUpdate();
               }
-
-              // canvas.discardActiveObject();
               canvas.renderAll();
             } else if (obj.type && obj.type === 'image') {
               for (const idx of obj.chainIndices) {
-                // fixed[idx] = false;
               }
             }
           },
