@@ -115,14 +115,22 @@
           renderOnAddRemove: false,
         });
         canvas.add(snapDot);
-        const snapLine = new fabric.Line([0, 0, 10, 10], {
-          fill: 'red',
-          stroke: 'red',
-          strokeWidth: 2,
+
+        const snapDot1 = new fabric.Circle({
+          left: 0,
+          top: 0,
+          radius: pointRadius,
+          fill: default_point_color,
+          stroke: '#999',
+          strokeWidth: 1,
+          objectCaching: false,
           selectable: false,
-          evented: false,
+          hasControls: false,
+          visible: true,
+          renderOnAddRemove: false,
         });
-        canvas.add(snapLine);
+
+        canvas.add(snapDot1);
 
         // update lines connected to this shape
         function updateConnectors(obj) {
@@ -525,11 +533,8 @@
               snapDot.left = minPos[0];
               snapDot.top = minPos[1];
 
-              snapLine.x1 = minPos[0];
-              snapLine.y1 = minPos[1];
-
-              snapLine.x2 = minPos[0] + minTangent[0] * 100;
-              snapLine.y2 = minPos[1] + minTangent[1] * 100;
+              snapDot1.left = minPos[0] + minTangent[0] * 100;
+              snapDot1.top = minPos[1] + minTangent[1] * 100;
             }
 
             canvas.renderAll();
