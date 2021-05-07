@@ -260,9 +260,11 @@
         // give a position, get the closest [pos,tangent] on the fabric object
         function getCloesestAnchor(obj, pos) {
           // we need to consider scaling and rotation
+          const center = [obj.left, obj.top];
 
-
-          return [[100, 100], [1, 0], 0];
+          // currently only consider distance to center point
+          const disSq = (pos[0] - center[0]) * (pos[0] - center[0]) + (pos[1] - center[1]) * (pos[1] - center[1]);
+          return [center, [1, 0], disSq];
         }
 
         function getPathPoints(objA, anchorA, objB, anchorB, pathType, padding) {
@@ -513,18 +515,18 @@
         canvas.on({
           'mouse:move': function (e) {
             var pos = canvas.getPointer(e.e);
-            console.log(`${pos.x}, ${pos.y}`);
 
             // loop all existing objects, not a efficient way!
             let minDis = Number.MAX_VALUE;
             let minPos = undefined, minTangent = undefined;
             renderImages.forEach(obj => {
               if (obj.type && obj.type === 'image') {
-                const [p, t, d] = getCloesestAnchor(obj, pos);
-                if (d < minDis) {
+                const [p, t, dq] = getCloesestAnchor(obj, [pos.x, pos.y]);
+
+                if (dq < minDis) {
                   minPos = p;
                   minTangent = t;
-                  minDis = d;
+                  minDis = dq;
                 }
               }
             });
@@ -532,9 +534,11 @@
             if (minPos && minTangent) {
               snapDot.left = minPos[0];
               snapDot.top = minPos[1];
+              snapDot1.left = minPos[0] + minTangent[0] * 20;
+              snapDot1.top = minPos[1] + minTangent[1] * 20;
 
-              snapDot1.left = minPos[0] + minTangent[0] * 100;
-              snapDot1.top = minPos[1] + minTangent[1] * 100;
+              snapDot.bringToFront();
+              snapDot1.bringToFront();
             }
 
             canvas.renderAll();
