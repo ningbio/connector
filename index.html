@@ -371,6 +371,53 @@
           return rotatedPath.map(pt => rotatePoint(-angle, pt[0], pt[1]));
         }
 
+        function clamp(value, low, high) {
+          if (value < low) return low;
+          if (value > high) return high;
+          return value;
+        }
+
+        // project any point to clampped uv of a rectangle
+        function getProjectedUV(obj, pos) {
+          // rectangle rotation angle
+          const angle = obj.angle;
+
+          // rotated u,v unit vector
+          const u = rotatePoint(angle, 1, 0);
+          const v = rotatePoint(angle, 0, 1);
+
+          const halfW = obj.width * obj.scaleX / 2;
+          const halfH = obj.height * obj.scaleY / 2;
+
+          const offset = [pos[0] - obj.left, pos[1] - obj.top];
+          const signedDisU = u[0] * offset[0] + u[1] * offset[1];
+          const signedDisV = v[0] * offset[0] + v[1] * offset[1];
+
+          const normU = Math.max(Math.min(signedDisU / halfW, 0.5), -0.5);
+          const normV = Math.max(Math.min(signedDisV / halfH, 0.5), -0.5);
+
+          return [normU + 0.5, normV + 0.5];
+        }
+
+        // get the world coord from uv 
+        function getWorldCoordFromUV(obj, UV) {
+          // rectangle rotation angle
+          const angle = obj.angle;
+
+          // rotated u,v unit vector
+          const u = rotatePoint(angle, 1, 0);
+          const v = rotatePoint(angle, 0, 1);
+
+          const halfW = obj.width * obj.scaleX / 2;
+          const halfH = obj.height * obj.scaleY / 2;
+
+          const x = obj.left + halfW * (UV[0] - 0.5);
+          const y = obj.top + halfH * (UV[1] - 0.5);
+
+          return [x, y];
+        }
+
+
         // first handle tA = (1,0) case, and validate each case, return [[x,y],[x,y],[x,y]]
         function getElbowPathPointingRight(A, posA, tA, B, posB, tB, pad) {
           // fixed tA: right
@@ -518,7 +565,7 @@
 
             // loop all existing objects, not a efficient way!
             let minDis = Number.MAX_VALUE;
-            let minPos = undefined, minTangent = undefined;
+            let minPos = undefined, minTangent = undefined, minObj = undefined;
             renderImages.forEach(obj => {
               if (obj.type && obj.type === 'image') {
                 const [p, t, dq] = getCloesestAnchor(obj, [pos.x, pos.y]);
@@ -527,15 +574,24 @@
                   minPos = p;
                   minTangent = t;
                   minDis = dq;
+                  minObj = obj;
                 }
               }
             });
 
-            if (minPos && minTangent) {
-              snapDot.left = minPos[0];
-              snapDot.top = minPos[1];
-              snapDot1.left = minPos[0] + minTangent[0] * 20;
-              snapDot1.top = minPos[1] + minTangent[1] * 20;
+            if (minPos && minTangent && minObj) {
+
+              const uv = getProjectedUV(minObj, [pos.x, pos.y]);
+              const anchorPos = getWorldCoordFromUV(minObj, uv);
+              // console.log(uv[0] + ',' + uv[1]);
+
+              // snapDot.left = minPos[0];
+              // snapDot.top = minPos[1];
+              snapDot.left = anchorPos[0]
+              snapDot.top = anchorPos[1];
+
+              snapDot1.left = snapDot.left + minTangent[0] * 20;
+              snapDot1.top = snapDot.top + minTangent[1] * 20;
 
               snapDot.bringToFront();
               snapDot1.bringToFront();
