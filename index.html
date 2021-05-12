@@ -257,18 +257,6 @@
           }
         }
 
-        // give a position, get the closest [pos,tangent] on the fabric object
-        function getCloesestAnchor(obj, pos) {
-          // we need to consider scaling and rotation
-          const center = [obj.left, obj.top];
-
-          // currently only consider distance to center point
-          const disSq = (pos[0] - center[0]) * (pos[0] - center[0]) + (pos[1] - center[1]) * (pos[1] - center[1]);
-
-
-          return [center, [1, 0], disSq];
-        }
-
         function getPathPoints(objA, anchorA, objB, anchorB, pathType, padding) {
           // need to consider scale when calc bounds, object default center is (left, top)
           const boundA = {
@@ -345,6 +333,39 @@
             top: Math.min(tl[1], br[1]),
             bottom: Math.max(tl[1], br[1]),
           };
+        }
+
+        // distance between point p to segment p1--p2
+        function pointToFigureDistanceSq(obj, pos) {
+          const center = [obj.left, obj.top];
+
+          // transform pos to obj's local space
+          const p = rotatePoint(-obj.angle, pos[0] - center[0], pos[1] - center[1]);
+          const halfW = obj.width * obj.scaleX / 2;
+          const halfH = obj.height * obj.scaleY / 2;
+
+          if (p[0] < -halfW && p[1] < -halfH) {
+            return (p[0] + halfW) * (p[0] + halfW) + (p[1] + halfH) * (p[1] + halfH);
+          } else if (p[0] < -halfW && p[1] > halfH) {
+            return (p[0] + halfW) * (p[0] + halfW) + (p[1] - halfH) * (p[1] - halfH);
+          } else if (p[0] > halfW && p[1] < -halfH) {
+            return (p[0] - halfW) * (p[0] - halfW) + (p[1] + halfH) * (p[1] + halfH);
+          } else if (p[0] > halfW && p[1] > halfH) {
+            return (p[0] - halfW) * (p[0] - halfW) + (p[1] - halfH) * (p[1] - halfH);
+          } else if (p[0] < -halfW) {
+            return (-halfW - p[0]) * (-halfW - p[0]);
+          } else if (p[0] > halfW) {
+            return (p[0] - halfW) * (p[0] - halfW);
+          } else if (p[1] < -halfH) {
+            return (-halfH - p[1]) * (-halfH - p[1]);
+          } else if (p[1] > halfH) {
+            return (p[1] - halfH) * (p[1] - halfH);
+          } else {
+            const minDx = Math.min(Math.abs(p[0] - halfW), Math.abs(p[0] + halfW));
+            const minDy = Math.min(Math.abs(p[1] - halfH), Math.abs(p[1] + halfH));
+            const minD = Math.min(minDx, minDy);
+            return minD * minD;
+          }
         }
 
         function getElbowPath(boundA, posA, tA, boundB, posB, tB, pad = g_elbow_padding) {
@@ -621,22 +642,18 @@
 
             // loop all existing objects, not a efficient way!
             let minDis = Number.MAX_VALUE;
-            let minPos = undefined, minTangent = undefined, minObj = undefined;
+            let minObj = undefined;
             renderImages.forEach(obj => {
               if (obj.type && obj.type === 'image') {
-                const [p, t, dq] = getCloesestAnchor(obj, [pos.x, pos.y]);
-
-                if (dq < minDis) {
-                  minPos = p;
-                  minTangent = t;
-                  minDis = dq;
+                const dsq = pointToFigureDistanceSq(obj, [pos.x, pos.y]);
+                if (dsq < minDis) {
+                  minDis = dsq;
                   minObj = obj;
                 }
               }
             });
 
-            if (minPos && minTangent && minObj) {
-
+            if (minObj) {
               const uv = getUVFromCoord(minObj, [pos.x, pos.y]);
               const anchorPos = getCoordFromUV(minObj, uv);
               const dir = getOuterDirWorld(minObj, uv);
