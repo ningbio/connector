@@ -378,7 +378,7 @@
         }
 
         // project any point to clampped uv of a rectangle
-        function getProjectedUV(obj, pos) {
+        function getUVFromCoord(obj, pos) {
           // rectangle rotation angle
           const angle = obj.angle;
 
@@ -389,18 +389,21 @@
           const halfW = obj.width * obj.scaleX / 2;
           const halfH = obj.height * obj.scaleY / 2;
 
-          const offset = [pos[0] - obj.left, pos[1] - obj.top];
+          const originX = obj.left - halfW * u[0] - halfH * v[0];
+          const originY = obj.top - halfW * u[1] - halfH * v[1];
+
+          const offset = [pos[0] - originX, pos[1] - originY];
           const signedDisU = u[0] * offset[0] + u[1] * offset[1];
           const signedDisV = v[0] * offset[0] + v[1] * offset[1];
 
-          const normU = Math.max(Math.min(signedDisU / halfW, 0.5), -0.5);
-          const normV = Math.max(Math.min(signedDisV / halfH, 0.5), -0.5);
+          const normU = Math.max(Math.min(signedDisU / halfW / 2, 1), 0);
+          const normV = Math.max(Math.min(signedDisV / halfH / 2, 1), 0);
 
-          return [normU + 0.5, normV + 0.5];
+          return [normU, normV];
         }
 
         // get the world coord from uv 
-        function getWorldCoordFromUV(obj, UV) {
+        function getCoordFromUV(obj, UV) {
           // rectangle rotation angle
           const angle = obj.angle;
 
@@ -411,8 +414,14 @@
           const halfW = obj.width * obj.scaleX / 2;
           const halfH = obj.height * obj.scaleY / 2;
 
-          const x = obj.left + halfW * (UV[0] - 0.5);
-          const y = obj.top + halfH * (UV[1] - 0.5);
+          const originX = obj.left - halfW * u[0] - halfH * v[0];
+          const originY = obj.top - halfW * u[1] - halfH * v[1];
+
+          const signedDisU = 2 * halfW * UV[0];
+          const signedDisV = 2 * halfH * UV[1];
+
+          const x = originX + signedDisU * u[0] + signedDisV * v[0];
+          const y = originY + signedDisU * u[1] + signedDisV * v[1];
 
           return [x, y];
         }
@@ -581,12 +590,9 @@
 
             if (minPos && minTangent && minObj) {
 
-              const uv = getProjectedUV(minObj, [pos.x, pos.y]);
-              const anchorPos = getWorldCoordFromUV(minObj, uv);
+              const uv = getUVFromCoord(minObj, [pos.x, pos.y]);
+              const anchorPos = getCoordFromUV(minObj, uv);
               // console.log(uv[0] + ',' + uv[1]);
-
-              // snapDot.left = minPos[0];
-              // snapDot.top = minPos[1];
               snapDot.left = anchorPos[0]
               snapDot.top = anchorPos[1];
 
