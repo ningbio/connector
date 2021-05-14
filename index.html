@@ -79,8 +79,6 @@
         let g_bending = 0.3; // normally [-0.5, 0,5], 0 means it's a straight line
         let g_padding = 0; // global end point padding for each connector line
 
-
-
         loadShape('./lib/rect.png', 300, 200, nIcons++); // 0
 
         loadShape('./lib/rect.png', 200, 400, nIcons++);
@@ -492,7 +490,6 @@
           } else {
             return [0, 0];
           }
-
         }
 
         // first handle tA = (1,0) case, and validate each case, return [[x,y],[x,y],[x,y]]
@@ -683,18 +680,6 @@
             if (!e.target) return;
             const obj = e.target;
             if (obj.type && obj.type === 'dot') {
-              console.log(`point ${obj.index} de-selected!`);
-
-              // if (toMergeIndex >= 0) {
-              //   const curIdx = obj.index;
-              //   // back to normal
-              //   if (toMergeIndex < curIdx) {
-              //     const otherDot = renderDots[toMergeIndex];
-              //     otherDot.fill = default_point_color;
-              //   }
-              //   toMergeIndex = -1;
-              //   // solveAndUpdate();
-              // }
               canvas.renderAll();
             } else if (obj.type && obj.type === 'image') {
               for (const idx of obj.chainIndices) {
@@ -847,7 +832,6 @@
 
         document.getElementById('load-last').onclick = (function () { loadShape(lastFile, nIcons++); });
         document.getElementById('load-custom').addEventListener('change', customLoad, false);
-
         document.getElementById('inc-bend').onclick = (function () {
           g_bending += 0.05;
           updateAllConnectors();
@@ -862,7 +846,6 @@
           canvas.renderAll();
           console.log(`g_bending = ${g_bending}`);
         });
-
         document.getElementById('inc-pad').onclick = (function () {
           g_padding += 5;
           updateAllConnectors();
