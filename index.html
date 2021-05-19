@@ -79,6 +79,15 @@
         let g_bending = 0.3; // normally [-0.5, 0,5], 0 means it's a straight line
         let g_padding = 0; // global end point padding for each connector line
 
+        const testBound = {
+          left: 0,
+          right: 100,
+          top: 0,
+          bottom: 100
+        };
+        const rb = rotateBound(45, testBound);
+        console.log(rb);
+
         loadShape('./lib/rect.png', 300, 200, nIcons++); // 0
 
         loadShape('./lib/rect.png', 200, 400, nIcons++);
@@ -280,7 +289,30 @@
               bottom: objB.top + objB.height * objB.scaleY / 2
             };
 
-            let elbowPath = getElbowPath(boundA, posA, tA, boundB, posB, tB);
+            // the obj may have rotation, in that case, we need to use the new outside bound
+            const newA = rotateBoundCentered(objA.angle, boundA);
+            const newB = rotateBoundCentered(objB.angle, boundB);
+            const newtA = roundTangent(tA);
+            const newtB = roundTangent(tB);
+            const findBoundPoint = (t, bound, pos) => {
+              if (isPointingRight(t)) {
+                return [bound.right, pos[1]];
+              } else if (isPointingLeft(t)) {
+                return [bound.left, pos[1]];
+              } else if (isPointingUp(t)) {
+                return [pos[0], bound.top];
+              } else if (isPointingDown(t)) {
+                return [pos[0], bound.bottom];
+              } else {
+                console.error(`wrong tangent! ${t}`);
+              }
+            };
+            const newPosA = findBoundPoint(newtA, newA, posA);
+            const newPosB = findBoundPoint(newtB, newB, posB);
+
+            // let elbowPath = getElbowPath(boundA, posA, tA, boundB, posB, tB);
+            let elbowPath = getElbowPath(newA, newPosA, newtA, newB, newPosB, newtB);
+
             elbowPath[0] = paddedPosA;
             elbowPath[elbowPath.length - 1] = paddedPosB;
             return elbowPath;
@@ -318,6 +350,9 @@
           if (Math.abs(1 - x) < eps) {
             return 1;
           }
+          if (Math.abs(1 + x) < eps) {
+            return -1;
+          }
 
           return x;
         }
@@ -330,6 +365,22 @@
             right: Math.max(tl[0], br[0]),
             top: Math.min(tl[1], br[1]),
             bottom: Math.max(tl[1], br[1]),
+          };
+        }
+
+        function rotateBoundCentered(angle, bound) {
+          const center = [(bound.left + bound.right) / 2, (bound.top + bound.bottom) / 2];
+          const corners = [
+            rotatePoint(angle, bound.left - center[0], bound.top - center[1]),
+            rotatePoint(angle, bound.left - center[0], bound.bottom - center[1]),
+            rotatePoint(angle, bound.right - center[0], bound.top - center[1]),
+            rotatePoint(angle, bound.right - center[0], bound.bottom - center[1])
+          ];
+          return {
+            left: Math.min(Math.min(Math.min(corners[0][0], corners[1][0]), corners[2][0]), corners[3][0]) + center[0],
+            right: Math.max(Math.max(Math.max(corners[0][0], corners[1][0]), corners[2][0]), corners[3][0]) + center[0],
+            top: Math.min(Math.min(Math.min(corners[0][1], corners[1][1]), corners[2][1]), corners[3][1]) + center[1],
+            bottom: Math.max(Math.max(Math.max(corners[0][1], corners[1][1]), corners[2][1]), corners[3][1]) + center[1]
           };
         }
 
@@ -451,8 +502,33 @@
           return Math.abs(v - 1.0) < 1e-9;
         }
 
+        function isMinusOne(v) {
+          return Math.abs(v + 1.0) < 1e-9;
+        }
+
         function isZero(v) {
           return Math.abs(v) < 1e-9;
+        }
+
+        // round vector to axis-aligned 
+        function roundTangent(t) {
+          return Math.abs(t[0]) > Math.abs(t[1]) ? [Math.sign(t[0]), 0] : [0, Math.sign(t[1])];
+        }
+
+        function isPointingRight(v) {
+          return isOne(v[0]) && isZero(v[1]);
+        }
+
+        function isPointingLeft(v) {
+          return isMinusOne(v[0]) && isZero(v[1]);
+        }
+
+        function isPointingUp(v) {
+          return isZero(v[0]) && isMinusOne(v[1]);
+        }
+
+        function isPointingDown(v) {
+          return isZero(v[0]) && isOne(v[1]);
         }
 
         // return pointing direction in UV space
