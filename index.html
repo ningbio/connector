@@ -257,20 +257,6 @@
 
         function getPathPoints(objA, anchorA, objB, anchorB, pathType, padding) {
           // need to consider scale when calc bounds, object default center is (left, top)
-          const boundA = {
-            left: objA.left - objA.width * objA.scaleX / 2,
-            right: objA.left + objA.width * objA.scaleX / 2,
-            top: objA.top - objA.height * objA.scaleY / 2,
-            bottom: objA.top + objA.height * objA.scaleY / 2
-          };
-
-          const boundB = {
-            left: objB.left - objB.width * objB.scaleX / 2,
-            right: objB.left + objB.width * objB.scaleX / 2,
-            top: objB.top - objB.height * objB.scaleY / 2,
-            bottom: objB.top + objB.height * objB.scaleY / 2
-          };
-
           const [posA, tA] = getAnchorInfo(objA, anchorA);
           const [posB, tB] = getAnchorInfo(objB, anchorB);
           const paddedPosA = [posA[0] + tA[0] * padding, posA[1] + tA[1] * padding];
@@ -280,6 +266,20 @@
           if (pathType === PathType.Line) {
             return [paddedPosA, paddedPosB];
           } else if (pathType === PathType.Elbow) {
+            const boundA = {
+              left: objA.left - objA.width * objA.scaleX / 2,
+              right: objA.left + objA.width * objA.scaleX / 2,
+              top: objA.top - objA.height * objA.scaleY / 2,
+              bottom: objA.top + objA.height * objA.scaleY / 2
+            };
+
+            const boundB = {
+              left: objB.left - objB.width * objB.scaleX / 2,
+              right: objB.left + objB.width * objB.scaleX / 2,
+              top: objB.top - objB.height * objB.scaleY / 2,
+              bottom: objB.top + objB.height * objB.scaleY / 2
+            };
+
             let elbowPath = getElbowPath(boundA, posA, tA, boundB, posB, tB);
             elbowPath[0] = paddedPosA;
             elbowPath[elbowPath.length - 1] = paddedPosB;
