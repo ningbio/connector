@@ -222,7 +222,7 @@
           const sinV = Math.sin(angle / 180 * Math.PI);
           const vecs = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // top, right, bottom, left
 
-          if (v === 0) {
+          if (isZero(v)) {
             // attach top edge
             const vec = vecs[0];
             const nx = cosV * vec[0] - sinV * vec[1];
@@ -230,7 +230,7 @@
             const len = halfH;
             const pos = [cx + len * nx + (u - 0.5) * W * (-ny), cy + len * ny + (u - 0.5) * W * nx];
             return [pos, [nx, ny]];
-          } else if (v === 1) {
+          } else if (isOne(v)) {
             // attach bottom edge
             const vec = vecs[2];
             const nx = cosV * vec[0] - sinV * vec[1];
@@ -238,7 +238,7 @@
             const len = halfH;
             const pos = [cx + len * nx + (u - 0.5) * W * (ny), cy + len * ny + (u - 0.5) * W * (-nx)];
             return [pos, [nx, ny]];
-          } else if (u === 0) {
+          } else if (isZero(u)) {
             // attach left edge
             const vec = vecs[3];
             const nx = cosV * vec[0] - sinV * vec[1];
@@ -246,7 +246,7 @@
             const len = halfW;
             const pos = [cx + len * nx + (v - 0.5) * H * (ny), cy + len * ny + (v - 0.5) * H * (-nx)];
             return [pos, [nx, ny]];
-          } else if (u === 1) {
+          } else if (isOne(u)) {
             // attach right edge
             const vec = vecs[1];
             const nx = cosV * vec[0] - sinV * vec[1];
@@ -418,17 +418,17 @@
         }
 
         function getElbowPath(boundA, posA, tA, boundB, posB, tB, pad = g_elbow_padding) {
-          if (tA[0] === 1 && tA[1] === 0) {
+          if (isPointingRight(tA)) {
             return getElbowPathPointingRight(boundA, posA, tA, boundB, posB, tB, pad);
           }
 
           // tA is up, rotate clockwise 90 along (0, 0)
           let angle = 0;
-          if (tA[0] === 0 && tA[1] === -1) {
+          if (isPointingUp(tA)) {
             angle = 90;
-          } else if (tA[0] === 0 && tA[1] === 1) {
+          } else if (isPointingDown(tA)) {
             angle = 270;
-          } else if (tA[0] === -1 && tA[1] === 0) {
+          } else if (isPointingLeft(tA)) {
             angle = 180;
           }
 
@@ -571,7 +571,7 @@
         // first handle tA = (1,0) case, and validate each case, return [[x,y],[x,y],[x,y]]
         function getElbowPathPointingRight(A, posA, tA, B, posB, tB, pad) {
           // fixed tA: right
-          if (tB[0] === -1 && tB[1] === 0) {
+          if (isPointingLeft(tB)) {
             // tB: pointing left              
             if (A.right <= B.left) { // case 1: B is right of A
               return [posA, [(posA[0] + posB[0]) / 2, posA[1]], [(posA[0] + posB[0]) / 2, posB[1]], posB];
@@ -591,7 +591,7 @@
               return [posA, [posA[0] + pad, posA[1]], [posA[0] + pad, mid], [posB[0] - pad, mid], [posB[0] - pad, posB[1]], posB];
             }
 
-          } else if (tB[0] === 0 && tB[1] === -1) {
+          } else if (isPointingUp(tB)) {
             // tB: pointing up
             if (posA[1] > posB[1] && posA[0] < posB[0]) { // case 1
               if (A.right < B.left) { // can pass middle
@@ -611,7 +611,7 @@
                 return [posA, [Math.max(A.right, B.right) + pad, posA[1]], [Math.max(A.right, B.right) + pad, Math.min(A.top, B.top) - pad], [posB[0], Math.min(A.top, B.top) - pad], posB];
               }
             }
-          } else if (tB[0] === 1 && tB[1] === 0) {
+          } else if (isPointingRight(tB)) {
             // tB: pointing right
             if (posA[1] < posB[1]) { // posA is up, posB is down
               if (posB[1] - A.bottom > pad || B.top - posA[1] > pad || (B.right > A.left && posB[0] < posA[0])) {
@@ -634,7 +634,7 @@
                 return [posA, [mid, posA[1]], [mid, B.bottom + pad], [B.right + pad, B.bottom + pad], [posB[0] + pad, posB[1]], posB];
               }
             }
-          } else if (tB[0] === 0 && tB[1] === 1) {
+          } else if (isPointingDown(tB)) {
             // tB: down
             if (posA[0] < posB[0] && posA[1] > posB[1]) {
               return [posA, [posB[0], posA[1]], posB];
