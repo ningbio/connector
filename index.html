@@ -309,14 +309,22 @@
             };
             const newPosA = findBoundPoint(newtA, newA, posA);
             const newPosB = findBoundPoint(newtB, newB, posB);
-
-            // let elbowPath = getElbowPath(boundA, posA, tA, boundB, posB, tB);
             let elbowPath = getElbowPath(newA, newPosA, newtA, newB, newPosB, newtB);
 
-            elbowPath[0] = paddedPosA;
-            elbowPath[elbowPath.length - 1] = paddedPosB;
+            // once we computed the path for the outer bounds, adjust two ends to original attaching points
+            elbowPath[0] = posA;
+            elbowPath[elbowPath.length - 1] = posB;
+
+            // finally apply padding if necessary
+            if (!isZero(padding)) {
+              elbowPath[0][0] += padding * newtA[0];
+              elbowPath[0][1] += padding * newtA[1];
+              elbowPath[elbowPath.length - 1][0] += padding * newtB[0];
+              elbowPath[elbowPath.length - 1][1] += padding * newtB[1];
+            }
+
             return elbowPath;
-            // return [posA, posB];
+
           } else if (pathType === PathType.Quadratic) { // quadratic curve, non-s shape
             const mid = [(posA[0] + posB[0]) / 2, (posA[1] + posB[1]) / 2];
             const norm = [-(posB[1] - posA[1]), posB[0] - posA[0]];
