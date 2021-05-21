@@ -79,15 +79,6 @@
         let g_bending = 0.3; // normally [-0.5, 0,5], 0 means it's a straight line
         let g_padding = 0; // global end point padding for each connector line
 
-        const testBound = {
-          left: 0,
-          right: 100,
-          top: 0,
-          bottom: 100
-        };
-        const rb = rotateBoundOrigin(45, testBound);
-        console.log(rb);
-
         loadShape('./lib/rect.png', 300, 200, nIcons++); // 0
 
         loadShape('./lib/rect.png', 200, 400, nIcons++);
