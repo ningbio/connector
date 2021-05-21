@@ -85,7 +85,7 @@
           top: 0,
           bottom: 100
         };
-        const rb = rotateBound(45, testBound);
+        const rb = rotateBoundOrigin(45, testBound);
         console.log(rb);
 
         loadShape('./lib/rect.png', 300, 200, nIcons++); // 0
@@ -365,7 +365,7 @@
           return x;
         }
 
-        function rotateBound(angle, bound) {
+        function rotateBoundOrigin(angle, bound) {
           const tl = rotatePoint(angle, bound.left, bound.top);
           const br = rotatePoint(angle, bound.right, bound.bottom);
           return {
@@ -440,8 +440,8 @@
             angle = 180;
           }
 
-          const newA = rotateBound(angle, boundA);
-          const newB = rotateBound(angle, boundB);
+          const newA = rotateBoundOrigin(angle, boundA);
+          const newB = rotateBoundOrigin(angle, boundB);
           const pA = rotatePoint(angle, posA[0], posA[1]);
           const pB = rotatePoint(angle, posB[0], posB[1]);
           let newTb = rotatePoint(angle, tB[0], tB[1]);
