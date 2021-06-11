@@ -418,7 +418,7 @@
 
         function getElbowPath(boundA, posA, tA, boundB, posB, tB, pad = g_elbow_padding) {
           if (isPointingRight(tA)) {
-            return getElbowPathPointingRight(boundA, posA, tA, boundB, posB, tB, pad);
+            return getElbowPathPointingRight(boundA, posA, boundB, posB, tB, pad);
           }
 
           // tA is up, rotate clockwise 90 along (0, 0)
@@ -438,7 +438,7 @@
           let newTb = rotatePoint(angle, tB[0], tB[1]);
           newTb = [roundValue(newTb[0]), roundValue(newTb[1])];
 
-          const rotatedPath = getElbowPathPointingRight(newA, pA, [1, 0], newB, pB, newTb, pad);
+          const rotatedPath = getElbowPathPointingRight(newA, pA, newB, pB, newTb, pad);
           return rotatedPath.map(pt => rotatePoint(-angle, pt[0], pt[1]));
         }
 
@@ -568,7 +568,7 @@
         }
 
         // first handle tA = (1,0) case, and validate each case, return [[x,y],[x,y],[x,y]]
-        function getElbowPathPointingRight(A, posA, tA, B, posB, tB, pad) {
+        function getElbowPathPointingRight(A, posA, B, posB, tB, pad) {
           // fixed tA: right
           if (isPointingLeft(tB)) {
             // tB: pointing left              
