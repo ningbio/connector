@@ -255,10 +255,44 @@
           }
         }
 
+        // objA, objB can be of size [0,0], in that case, attaching point is obj's position [left, top]
         function getPathPoints(objA, anchorA, objB, anchorB, pathType, padding) {
-          // need to consider scale when calc bounds, object default center is (left, top)
-          const [posA, tA] = getAnchorInfo(objA, anchorA);
-          const [posB, tB] = getAnchorInfo(objB, anchorB);
+          if (!objA.left || !objA.top || !objB.left || !objB.top) {
+            console.error(`Object missing position [left,top]`);
+          }
+
+          const dx = objA.left - objB.left;
+          const dy = objA.top - objB.top;
+
+          let posA, posB, tA, tB;
+
+          // if obj is just a point, calc tA by objB's position
+          if (objA.width === 0 || objA.height === 0) {
+            posA = [objA.left, objA.top];
+            if (Math.abs(dx) > Math.abs(dy)) {
+              // horizontal connector
+              tA = dx < 0 ? [1, 0] : [-1, 0];
+            } else {
+              // vertical connector
+              tA = dy < 0 ? [0, 1] : [0, -1];
+            }
+          } else {
+            [posA, tA] = getAnchorInfo(objA, anchorA);
+          }
+
+          if (objB.width === 0 || objB.height === 0) {
+            posB = [objB.left, objB.top];
+            if (Math.abs(dx) > Math.abs(dy)) {
+              // horizontal connector
+              tB = dx < 0 ? [-1, 0] : [1, 0];
+            } else {
+              // vertical connector
+              tB = dy < 0 ? [0, -1] : [0, 1];
+            }
+          } else {
+            [posB, tB] = getAnchorInfo(objB, anchorB);
+          }
+
           const paddedPosA = [posA[0] + tA[0] * padding, posA[1] + tA[1] * padding];
           const paddedPosB = [posB[0] + tB[0] * padding, posB[1] + tB[1] * padding];
 
@@ -812,6 +846,7 @@
           connect(getIcon(0), [1, 0.5], getIcon(5), [0.25, 0.25], PathType.Cubic, g_padding);
 
           // elbow
+          // getIcon(7).width = 0;
           connect(getIcon(6), [0, 0.5], getIcon(7), [0.5, 1], PathType.Elbow, g_padding);
 
           // line and elbow
