@@ -246,11 +246,12 @@
             const pos = [cx + len * nx + (v - 0.5) * H * (-ny), cy + len * ny + (v - 0.5) * H * nx];
             return [pos, [nx, ny]];
           } else {
-            // attach inner anchor
+            // attach inner anchor, normally we would normalize vec, but because we are not using it, save some calculation
             const vec = [u - 0.5, v - 0.5];
             const nx = cosV * vec[0] - sinV * vec[1];
             const ny = sinV * vec[0] + cosV * vec[1];
-            const pos = [cx + halfW * nx + (u - 0.5) * W * (-ny), cy + halfH * ny + (v - 0.5) * H * nx];
+            const scaledVec = [W * (u - 0.5), H * (v - 0.5)];
+            const pos = [cx + cosV * scaledVec[0] - sinV * scaledVec[1], cy + sinV * scaledVec[0] + cosV * scaledVec[1]];
             return [pos, [nx, ny]];
           }
         }
@@ -847,7 +848,7 @@
 
           // elbow
           // getIcon(7).width = 0;
-          connect(getIcon(6), [0, 0.5], getIcon(7), [0.5, 1], PathType.Elbow, g_padding);
+          connect(getIcon(6), [0.5, 0.5], getIcon(7), [0.5, 1], PathType.Elbow, g_padding);
 
           // line and elbow
           connect(getIcon(1), [0.5, 1], getIcon(8), [0.5, 0], PathType.Quadratic, g_padding);
